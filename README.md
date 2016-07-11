@@ -1,4 +1,4 @@
-MapCADder http://kerkerland.com/mapcadder
+#MapCADder
 ## Accurate and powerful survey website for Taiwan 
 
 ### INTRODUCTION
@@ -16,6 +16,4 @@ MapCADder also provide many useful functions for users.
 You can go to http://kerkerland.com/mapcadder to visit the website.
 
 If you have any suggestion, please contact send me an email chenghungko@gmail.com
-
-[MapCADder]:< http://kerkerland.com/mapcadder>
 
