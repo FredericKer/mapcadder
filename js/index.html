@@ -1,0 +1,3979 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<meta charset='utf-8'>
+    <meta name="keywords" content="TWD97, 台灣坐標系統, 台灣坐標基準, taiwan datum 97,TWD97坐標轉換, TWD97, Google Map">
+    <meta name="description" content="MAP CAPTURE 台灣97坐標系統地圖測量網頁，與google map內建測量工具比較，網頁中的測量數據依照台灣目前使用的TWD97坐標系統進行運算，可提供台灣民眾較正確的測量數據，並且提供輸出dxf與地圖擷圖的功能，方便相關需求使用者利用。">
+    <meta name="author" content="Frederic Ko">
+    <title>TWDSN 台灣97坐標系統測量網頁</title>
+    <link type="text/css" rel="stylesheet" href="css/materialize.css"  media="screen,projection"/>
+    <link type="text/css" rel="stylesheet" href="css/gmd.v4.css"/>
+
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB9uHcYdiQRKvj3P9CFTBugqJX8XiJDOvQ&sensor=false&libraries=drawing"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="js/materialize.min.js"></script>
+    <script type="text/javascript" src="js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="js/gmd.v3.js"></script>
+    <script type="text/javascript" src="js/gmdFunction.js"></script>
+
+	<!--google analytics-->
+
+	<script>
+ 		 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+ 		 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+ 		 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+ 		 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ 		 ga('create', 'UA-58733497-1', 'auto');
+ 		 ga('send', 'pageview');
+
+	</script>
+    
+    <script type="text/javascript">
+
+    	$("document").ready(function(){
+    	
+    		/////////// start variable //////////
+    		var map;
+   			var area,areaO,areaD;
+		    var markers = [];
+		    var polygonMarkers=[];
+		    var polygonMarkersAdd=[];
+		    var polylineMarkers=[];
+		    var polylineMarkersAdd=[];
+		    var marker,map,infowindow,testPolygon,infowindowPolygon,infowindowPolyline;
+		    var drawingmanager;
+		    var polygons =[]; 
+		    var polygonPoints = [];
+		    var polygonPoints97 = [];
+		    var polygonPoints97O = [];
+		    var polylines = [];
+		    var polylineLength = {L:0,LO:0};
+		    var polylinePoints;
+		    var polylinePoints97 =[];
+		    var polylinePoints97O =[];
+		    var infowindows = [];	
+		    var infowindowsAdd=[];
+		    var infowindowPolygons =[];
+		    var infowindowPolygonsAdd=[];
+		    var infowindowPolylines =[];
+		    var infowindowPolylinesAdd=[];
+		    var showPoint = {X:0,Y:0};
+		    var showPointO = {X:0,Y:0};
+		    var latMid =[];
+		    var lngmID=[];
+		    var polylineJSONString=[];
+		    var pointJSONString =[];
+		    var polygonJSONString =[];
+		    var polylineCount=0;
+		    var pointCount=0;
+		    var polygonCount=0;
+		    var pointID =0;
+		    var polylineID=0;
+		    var polygonID=0;
+		    var geocorder;
+		    var newLatLng = {Lt:0,Ln:0};
+		    var E=[];
+		    var N=[];
+    
+		    pointImage=[];
+    
+		    for(var i=0;i<5;i++){
+		    	pointImage[i]={
+		    		X:0,Y:0
+		    	}
+		    }
+    
+		    var imageLink4Btn;
+		    var rectangleCenter = {
+		    	lat:0,
+		    	lng:0
+		    };
+    
+		    var xWidth,yHeight;
+		    /////////// end variable //////////
+
+    		//////set map canvas' height to appropriate size!
+
+    		$("#mapCanvas").css("height",(window).innerHeight-130);
+
+    		////////////DEALING WITH CLEAR FUNCTION ON NAVI BAR////////////
+    		$("#li1 ,#li2 ,#li3").hover(function(){
+    			$(this).css("background-color",'#ef5350');
+    			
+    			},
+
+    			function(){
+    				$(this).css("background-color",'#4dd0e1');
+    			}
+
+    		);////////////DEALING WITH CLEAR FUNCTION ON NAVI BAR END////////////
+
+    		$("#li4 ,#li5").hover(function(){
+    			$(this).css("background-color",'#4caf50 ');
+    			
+    			},
+
+    			function(){
+    				$(this).css("background-color",'#4dd0e1');
+    			}
+
+    		);////////////DEALING WITH CLEAR FUNCTION ON NAVI BAR END////////////
+
+    		$('select').material_select();// material framwork required function
+    		$('.modal-trigger').leanModal();
+    		$('.scrollspy').scrollSpy();
+    		$('.collapsible').collapsible({
+      			accordion : false // A setting that changes the collapsible behavior to expandable instead of the default accordion style
+    		});
+
+    		$('.dropdown-buttonConvert').sideNav();
+    		$('.dropdown-Instruction').sideNav();
+    		$('.dropdown-buttonSearch').sideNav();
+    		$('.dropdown-buttonOption').sideNav();
+    		$('.dropdown-buttonFunction').sideNav();
+
+    		///////////intro slider function///////////////
+
+    		$('.slider').slider({full_width:true,height:720});
+
+    		if($.cookie("name")=="visitor"){	
+    			$("#sliderDiv").css("display","none");
+    			$("#mainWrap").css("display","block");
+    			$("#navBar").css("display","block");
+    			$("body").addClass("cyan accent-4");
+    			initAll();
+    		}
+
+    		else{
+    			$.cookie("name","visitor",{expires:7});
+    			$("#mainWrap").css("display","none");
+    			$("#sliderDiv").css("display","block");
+    			$("#navBar").css("display","none");
+    			$("body").removeClass("cyan accent-4");
+    		}
+
+    		$("#sliderSkip").on("click",function(){
+    			$("#sliderDiv").css("display","none");
+    			$("#mainWrap").css("display","block");
+    			$("#navBar").css("display","block");
+    			$("body").addClass("cyan accent-4");
+    			initAll();
+    			
+    		});
+
+    		///////////intro slider function end /////////// 
+    		
+    		/////////drop-down- init()/////////////////////
+    		$('.dropdown-buttonConvert').dropdown({
+     			inDuration: 100,
+      			outDuration: 100,
+      			constrain_width: false, // Does not change width of dropdown to that of the activator
+      			hover: true, // Activate on click
+      			alignment: 'right', // Aligns dropdown to left or right edge (works with constrain_width)
+      			gutter: 0, // Spacing from edge
+    			
+    		});
+
+    		$('.dropdown-buttonSearch').dropdown({
+     			inDuration: 100,
+      			outDuration: 100,
+      			constrain_width: true, // Does not change width of dropdown to that of the activator
+      			hover: true, // Activate on click
+      			alignment: 'right', // Aligns dropdown to left or right edge (works with constrain_width)
+      			gutter: 0, // Spacing from edge
+    			
+    		});
+
+    		$('.dropdown-buttonOption').dropdown({
+     			inDuration: 100,
+      			outDuration: 100,
+      			constrain_width: true, // Does not change width of dropdown to that of the activator
+      			hover: true, // Activate on click
+      			alignment: 'right', // Aligns dropdown to left or right edge (works with constrain_width)
+      			gutter: 0, // Spacing from edge
+    			
+    		});
+
+    		$('.dropdown-buttonFunction').dropdown({
+     			inDuration: 100,
+      			outDuration: 100,
+      			constrain_width: true, // Does not change width of dropdown to that of the activator
+      			hover: true, // Activate on click
+      			alignment: 'right', // Aligns dropdown to left or right edge (works with constrain_width)
+      			gutter: 0, // Spacing from edge
+    			
+    		});
+
+    		$('.dropdown-Instruction').dropdown({
+     			inDuration: 100,
+      			outDuration: 100,
+      			constrain_width: true, // Does not change width of dropdown to that of the activator
+      			hover: true, // Activate on click
+      			alignment: 'right', // Aligns dropdown to left or right edge (works with constrain_width)
+      			gutter: 0, // Spacing from edge
+    			
+    		});
+    		
+    		/////////modal close function/////////
+
+    		$('.modal-trigger').leanModal({
+     			 dismissible: true, // Modal can be dismissed by clicking outside of the modal
+      			 opacity: .5, // Opacity of modal background
+      			 in_duration: 300, // Transition in duration
+      			 out_duration: 200, // Transition out duration
+     			
+    			}
+  			);
+  		
+
+    	function initAll(){
+
+    	    ///////ADD NEW DRAWING CONTROL ICON TO REPLACE OLD ONE
+
+		    var newDrawingMove = $("<a id='newDrawingMoveA' class='light-blue waves-effect btn col s1'>"+"<i class='mdi-action-open-with'></i>"+"</a>");
+			var newDrawingMark = $("<a id='newDrawingMarkA' class='light-blue waves-effect btn col s1'>"+"<i class='mdi-communication-location-on'></i>"+"</a>");
+			var newDrawingPolyline = $("<a id='newDrawingPolylineA' class='light-blue waves-effect btn col s1'>"+"<i class='mdi-content-remove'></i>"+"</a>");
+			var newDrawingPolygon = $("<a id='newDrawingPolygonA' class='light-blue waves-effect btn col s1'>"+"<i class='mdi-image-crop-landscape'></i>"+"</a>");
+			var newDrawingRecatngle = $("<a id='newDrawingRecatngleA' class='light-blue waves-effect btn col s1'>"+"<i class='mdi-action-tab-unselected'></i>"+"</a>");
+			
+			var newDrawingControl = $('<div/>',{'class':'col s5 offset-s3','id':'newDrawingControlDiv'}).append(newDrawingMove).append(newDrawingMark).append(newDrawingMark).append(newDrawingPolyline).append(newDrawingPolygon).append(newDrawingRecatngle);
+		   
+			$(newDrawingMark).click(function(){
+				drawingmanager.setDrawingMode(google.maps.drawing.OverlayType.MARKER);
+				$("#newDrawingControlDiv").find(".darken-3").removeClass('darken-3');
+				$("#newDrawingMarkA").addClass('darken-3');
+			});
+
+			$(newDrawingPolyline).click(function(){
+				drawingmanager.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE);
+				$("#newDrawingControlDiv").find(".darken-3").removeClass('darken-3');
+				$("#newDrawingPolylineA").addClass('darken-3');
+			});
+
+			$(newDrawingPolygon).click(function(){
+				drawingmanager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+				$("#newDrawingControlDiv").find(".darken-3").removeClass('darken-3');
+				$("#newDrawingPolygonA").addClass('darken-3');
+			});
+
+			$(newDrawingRecatngle).click(function(){
+				drawingmanager.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE);
+				$("#newDrawingControlDiv").find(".darken-3").removeClass('darken-3');
+				$("#newDrawingRecatngleA").addClass('darken-3');
+			});
+
+			$(newDrawingMove).click(function(){
+				drawingmanager.setDrawingMode("");
+				$("#newDrawingControlDiv").find(".darken-3").removeClass('darken-3');
+				$("#newDrawingMoveA").addClass('darken-3');
+				//$("#newDrawingMoveA").addClass('darken-3');
+			});
+		   	
+		   	///////////add new clear icon on map/////////////////
+
+		   	var newClearMark = $("<a id='newClearMarkA' class='center-align red waves-effect btn col s12'>"+"<i class='mdi-communication-location-on'></i>"+"</a>");
+			var newClearPolyline = $("<a id='newClearPolylineA' class='center-align red waves-effect btn col s12'>"+"<i class='mdi-content-remove'></i>"+"</a>");
+			var newClearPolygon = $("<a id='newClearPolygonA' class='center-align red waves-effect btn col s12'>"+"<i class='mdi-image-crop-landscape'></i>"+"</a>");
+			var newClearRecatngle = $("<a id='newClearRecatngleA' class='center-align red waves-effect btn col s12'>"+"<i class='mdi-action-tab-unselected'></i>"+"</a>"); 
+
+			var newClearIcon = $('<div/>',{'class':'col s1','id':'newClearIconDiv'}).css("width",'5%').append(newClearMark).append(newClearMark).append(newClearPolyline).append(newClearPolygon).append(newClearRecatngle);
+
+			//////////add new output icon on map/////////////////
+
+			var newExportDxf = $("<a id='newExportDxfA' class='center-align green waves-effect btn col s1 offset-s9'>"+"DXF"+"</a>");
+			var newExportImage = document.createElement('a');
+			var newExportImageI = document.createElement('i');
+			newExportImage.appendChild(newExportImageI);
+			newExportImage.setAttribute('id','newExportImageA');		
+			newExportImage.setAttribute('href','#modalExportMap');
+			newExportImage.setAttribute('class','center-align modal-trigger green waves-effect btn col s1');
+			newExportImageI.setAttribute('class','mdi-image-photo-camera');
+
+			var newExportIcon = $('<div/>',{'class':'col s5','id':'newExportIconDiv'}).append(newExportDxf).append(newExportImage);
+		   
+		   	//////////add new switch map type icon on map/////////////////
+		   	var  newRoadmapIcon =  $("<a id='newRoadmapIconA' class='blue waves-effect btn col s1'>"+"<i class='mdi-image-grid-on'></i>"+"</a>");
+		   	var  newSatelliteIcon =  $("<a id='newSatelliteIconA' class='blue lighten-3 waves-effect btn col s1'>"+"<i class='mdi-social-public'></i>"+"</a>");
+		   	var  newHybridIcon =  $("<a id='newHybridIconA' class='blue lighten-3 waves-effect btn col s1'>"+"<i class='mdi-image-photo-library'></i>"+"</a>");
+
+		   	var newMapSwitch = $('<div/>',{'class':'col s5','id':'newMapSwitchDiv'}).append(newRoadmapIcon).append(newSatelliteIcon).append(newHybridIcon);
+		   
+		   	$(newRoadmapIcon).on('click',function(){
+		   		map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+		   		$("#newSatelliteIconA,#newHybridIconA").addClass('lighten-3');
+		   		$("#newRoadmapIconA").removeClass('lighten-3');
+		   	});
+
+		   	$(newSatelliteIcon).on('click',function(){
+		   		map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+		   		$("#newHybridIconA,#newRoadmapIconA").addClass('lighten-3');
+				$("#newSatelliteIconA").removeClass('lighten-3');
+		   	});
+
+		   	$(newHybridIcon).on('click',function(){
+		   		map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+		   		$("#newRoadmapIconA,#newSatelliteIconA").addClass('lighten-3');
+				$("#newHybridIconA").removeClass('lighten-3');
+		   	});
+
+		   	//////////add new zoom icon on map/////////////////
+
+		   	var  newZoomUp =  $("<a id='newZoomUpA' class='grey waves-effect btn col s12'>"+"<i class='mdi-hardware-keyboard-arrow-up'></i>"+"</a>");
+		   	var  newZoomDown =  $("<a id='newZoomDownA' class='grey waves-effect btn col s12'>"+"<i class='mdi-hardware-keyboard-arrow-down'></i>"+"</a>");
+		   	var  newZoomStatus =  $("<label id='newZoomStatusA' class='center-align col s12' style='font-size:16px;background-color:rgba(1,1,1,0.7);color: white'>"+"15"+"</label>");
+
+		   	var newZoomIcon = $('<div/>',{'class':'col s1 row','id':'newZoomIconDiv'}).css("width",'5%').append(newZoomUp).append(newZoomDown).append(newZoomStatus);
+
+		   	$(newZoomUp).on('click',function(){
+		   		 map.setZoom(map.getZoom()+1);	
+		   		 $("#newZoomStatusA").text(map.getZoom());
+		   	});
+
+		   	$(newZoomDown).on('click',function(){
+		   		 map.setZoom(map.getZoom()-1);	
+		   		 $("#newZoomStatusA").text(map.getZoom());
+		   	});
+		   
+
+		    init();
+
+    		//***************************************************// 
+			//////////////  initialization start  /////////////////
+			//***************************************************// 
+			function init(){
+
+			    var mapOptions = {
+    
+			    	center : new google.maps.LatLng(24.161707,120.646675),
+			    	zoom:15,
+			    	disableDoubleClickZoom:true,
+			    	panControl:false,
+			    	mapTypeControl:false,
+			    	scaleControl:true,
+			    	zoomControl:false,
+
+			    	
+
+			    };
+    
+			    map = new google.maps.Map(document.getElementById("mapCanvas"),mapOptions);
+    
+			    geocorder = new google.maps.Geocoder();
+   				
+			    drawingmanager = new google.maps.drawing.DrawingManager({
+    	
+			    	//drawingMode:google.maps.drawing.OverlayType.MARKER,
+			    	drawingControl:false,
+
+			    	drawingControlOptions:{
+    
+			    		position:google.maps.ControlPosition.BOTTOM_CENTER,
+    					
+			    		drawingModes:[google.maps.drawing.OverlayType.MARKER,google.maps.drawing.OverlayType.POLYLINE,google.maps.drawing.OverlayType.POLYGON,google.maps.drawing.OverlayType.RECTANGLE]
+			    		
+			    	},//end drawingControlOptions
+    
+			    	markerOptions:{
+    
+			    		animation:google.maps.Animation.DROP,
+    
+			    	},//end marker options
+    
+			    	polygonOptions:{
+			    		strokeWeight:4,
+			    		strokeColor:'#03a9f4',
+			    		strokeOpacity:0.8,
+			    		fillColor:"#455a64",
+			    		fillOpacity:0.7,
+			    		editable:true,
+			    	},//end polygonOptions
+    
+			    	polylineOptions:{
+			    		strokeWeight:4,
+			    		strokeColor:"#e53935",
+			    		strokeOpacity:0.8,
+			    		editable:true,
+			    	},//end polylineOptions
+    
+			    	rectangleOptions:{
+			    			editable:true,
+			    			strokeWeight:4,
+			    			strokeColor:"#00c853",
+			    			fillColor:"#455a64",
+			    			strokeOpacity:0.8,
+			    	}//end rectangle Options
+    
+    
+			    });
+    
+			    	drawingmanager.setMap(map);
+
+					map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(newDrawingControl[0]);
+					map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(newClearIcon[0]);
+					map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(newExportIcon[0]);
+					map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(newMapSwitch[0]);
+					map.controls[google.maps.ControlPosition.LEFT_CENTER].push(newZoomIcon[0]);
+
+
+			    }//end initilizer
+
+			//***************************************************// 
+			//////////////   initialization end   /////////////////
+			//***************************************************// 
+
+			//***************************************************// 
+			//////////////   DXF EXPORT F start   /////////////////
+			//***************************************************// 
+
+			$("#btnOutputDXF").click(function(){
+
+			var lineString="";
+			var polygonString ="";
+			var pointString="";
+
+			////////////////////creat point json to textarea//////////////////
+
+				if(pointCount==1){
+					pointString =  "\"point\":["+"["+pointJSONString[0]+"]]";
+				}
+
+				else if(pointCount>1){
+
+					for(var i=0;i<pointCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							pointString += "\"point\":["+"["+pointJSONString[i]+"],";
+						}
+
+						else if(i<pointCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							pointString += "["+pointJSONString[i]+"],";
+						}
+
+						else if(i==pointCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							pointString += "["+pointJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}
+			
+
+
+				////////////////////creat polyline json to textarea//////////////////
+
+				if(polylineCount==1){
+
+					//$("#textInput").append("{\"Polyline0"+"\":["+polylineJSONString[0]+"]}");
+					lineString = "\"polyline\":["+"["+polylineJSONString[0]+"]]";
+				}
+
+				else if(polylineCount>1){
+
+					for(var i=0;i<polylineCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							lineString += "\"polyline\":["+"["+polylineJSONString[i]+"],";
+						}
+
+						else if(i<polylineCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							lineString += "["+polylineJSONString[i]+"],";
+						}
+
+						else if(i==polylineCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							lineString += "["+polylineJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}//end else
+
+				////////////////////creat polygon json to textarea//////////////////
+
+
+				if(polygonCount==1){
+
+					//$("#textInput").append("{\"Polyline0"+"\":["+polylineJSONString[0]+"]}");
+					polygonString = "\"polygon\":["+"["+polygonJSONString[0]+"]]";
+				}
+
+				else if(polygonCount>1){
+
+					for(var i=0;i<polygonCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							polygonString += "\"polygon\":["+"["+polygonJSONString[i]+"],";
+						}
+
+						else if(i<polygonCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							polygonString += "["+polygonJSONString[i]+"],";
+						}
+
+						else if(i==polygonCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							polygonString += "["+polygonJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}//end else
+
+
+				
+
+				if(pointCount>0 || polylineCount>0 || polygonCount>0){
+
+					if(pointString!=="" && lineString!=="" && polygonString!==""){
+						$("#textInput").html("{"+lineString+","+pointString+","+polygonString+"}");
+					}
+
+					//if polyline != empty but others are
+					else if(pointString==="" && lineString!=="" && polygonString===""){
+						$("#textInput").html("{"+lineString+"}");
+					}
+					
+					//if pointstring != empty but others are
+					else if(pointString!=="" && lineString==="" && polygonString===""){
+						$("#textInput").html("{"+pointString+"}");
+					}
+
+					//if polygon != empty but others are
+					else if(pointString==="" && lineString==="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+"}");
+
+					}
+
+					//if polyLINE and polygon!= empty but point is 
+					else if(pointString==="" && lineString!=="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+","+lineString+"}");
+					}
+
+					//if POINT and polygon!= empty but POLYLINE is 
+					else if(pointString!=="" && lineString==="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+","+pointString+"}");
+					}
+
+					//if POINT and polyline!= empty but POLYGON is 
+					else if(pointString!=="" && lineString!=="" && polygonString===""){
+						$("#textInput").html("{"+lineString+","+pointString+"}");
+					}	
+
+
+					//if all are empty 
+					else if(pointString==="" && lineString==="" && polygonString===""){
+						$("#textInput").html({});
+					}
+
+				}//end output if 
+
+				$("#inputForm").submit();	
+
+			});//end submit btn click function
+
+			$(newExportDxf).click(function(){
+
+			var lineString="";
+			var polygonString ="";
+			var pointString="";
+
+			////////////////////creat point json to textarea//////////////////
+
+				if(pointCount==1){
+					pointString =  "\"point\":["+"["+pointJSONString[0]+"]]";
+				}
+
+				else if(pointCount>1){
+
+					for(var i=0;i<pointCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							pointString += "\"point\":["+"["+pointJSONString[i]+"],";
+						}
+
+						else if(i<pointCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							pointString += "["+pointJSONString[i]+"],";
+						}
+
+						else if(i==pointCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							pointString += "["+pointJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}
+			
+
+
+				////////////////////creat polyline json to textarea//////////////////
+
+				if(polylineCount==1){
+
+					//$("#textInput").append("{\"Polyline0"+"\":["+polylineJSONString[0]+"]}");
+					lineString = "\"polyline\":["+"["+polylineJSONString[0]+"]]";
+				}
+
+				else if(polylineCount>1){
+
+					for(var i=0;i<polylineCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							lineString += "\"polyline\":["+"["+polylineJSONString[i]+"],";
+						}
+
+						else if(i<polylineCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							lineString += "["+polylineJSONString[i]+"],";
+						}
+
+						else if(i==polylineCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							lineString += "["+polylineJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}//end else
+
+				////////////////////creat polygon json to textarea//////////////////
+
+
+				if(polygonCount==1){
+
+					//$("#textInput").append("{\"Polyline0"+"\":["+polylineJSONString[0]+"]}");
+					polygonString = "\"polygon\":["+"["+polygonJSONString[0]+"]]";
+				}
+
+				else if(polygonCount>1){
+
+					for(var i=0;i<polygonCount;i++){
+
+
+						if(i==0){
+							//$("#textInput").append("{\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							polygonString += "\"polygon\":["+"["+polygonJSONString[i]+"],";
+						}
+
+						else if(i<polygonCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"],");
+							polygonString += "["+polygonJSONString[i]+"],";
+						}
+
+						else if(i==polygonCount-1){
+							//$("#textInput").append("\"Polyline"+i+"\":["+polylineJSONString[i]+"]}");
+							polygonString += "["+polygonJSONString[i]+"]]";
+						}
+			
+					}//end inner for
+
+				}//end else
+
+
+				
+
+				if(pointCount>0 || polylineCount>0 || polygonCount>0){
+
+					if(pointString!=="" && lineString!=="" && polygonString!==""){
+						$("#textInput").html("{"+lineString+","+pointString+","+polygonString+"}");
+					}
+
+					//if polyline != empty but others are
+					else if(pointString==="" && lineString!=="" && polygonString===""){
+						$("#textInput").html("{"+lineString+"}");
+					}
+					
+					//if pointstring != empty but others are
+					else if(pointString!=="" && lineString==="" && polygonString===""){
+						$("#textInput").html("{"+pointString+"}");
+					}
+
+					//if polygon != empty but others are
+					else if(pointString==="" && lineString==="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+"}");
+
+					}
+
+					//if polyLINE and polygon!= empty but point is 
+					else if(pointString==="" && lineString!=="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+","+lineString+"}");
+					}
+
+					//if POINT and polygon!= empty but POLYLINE is 
+					else if(pointString!=="" && lineString==="" && polygonString!==""){
+						$("#textInput").html("{"+polygonString+","+pointString+"}");
+					}
+
+					//if POINT and polyline!= empty but POLYGON is 
+					else if(pointString!=="" && lineString!=="" && polygonString===""){
+						$("#textInput").html("{"+lineString+","+pointString+"}");
+					}	
+
+
+					//if all are empty 
+					else if(pointString==="" && lineString==="" && polygonString===""){
+						$("#textInput").html({});
+					}
+
+				}//end output if 
+
+				////////submit dxf json to server//////////
+    			
+    			$("#inputForm").submit();
+    			
+
+
+
+			});//end submit btn click function
+
+		    //***************************************************// 
+		    //////////////   DXF EXPORT F END     /////////////////
+		    //***************************************************// 
+    
+    
+
+		    //***************************************************// 
+		    ///////////   click to clean allpoints  start /////////
+		    //***************************************************// 
+    
+		    	$("#btnCleanAllPoint").click(function(){
+    
+		    		for(var i=0;i<markers.length;i++){
+		    			markers[i].setMap(null);
+		    		}
+    
+		    		markers=[];
+		    		pointJSONString =[];
+		    		pointCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+		    		infowindows = [];
+		    		infowindowsAdd=[];
+    
+		    	});// END CLEANBTN 
+
+		    	$(newClearMark).click(function(){
+    
+		    		for(var i=0;i<markers.length;i++){
+		    			markers[i].setMap(null);
+		    		}
+    
+		    		markers=[];
+		    		pointJSONString =[];
+		    		pointCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+		    		infowindows = [];
+		    		infowindowsAdd=[];
+    
+		    	});// END CLEANBTN 
+    
+		    //***************************************************// 
+		    ///////////   click to clean allpoints  end   /////////
+		    //***************************************************//  
+    
+    
+		    //***************************************************// 
+		    ///////////  click to clean allpolyline  start/////////
+		    //***************************************************// 
+    
+		    	$("#btnCleanAllPolyline").click(function(){
+    
+		    		polylineJSONString=[];
+		    		polylineCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+    
+		    		for(var i=0;i<polylines.length;i++){
+    
+		    			polylines[i].setMap(null);
+		    			polylineMarkers[i].setMap(null)
+		    		
+		    		}
+		    
+		    		infowindowPolylines = [];
+    
+		    	});// END CLEANBTN 
+
+		    	$(newClearPolyline).click(function(){
+    
+		    		polylineJSONString=[];
+		    		polylineCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+    
+		    		for(var i=0;i<polylines.length;i++){
+    
+		    			polylines[i].setMap(null);
+		    			polylineMarkers[i].setMap(null)
+		    		
+		    		}
+		    
+		    		infowindowPolylines = [];
+    
+		    	});// END CLEANBTN 
+    
+		    //***************************************************// 
+		    ///////////   click to clean allpolyline  end /////////
+		    //***************************************************//  
+    
+    
+		    //***************************************************// 
+		    ///////////  click to clean allpolygon start /////////
+		    //***************************************************// 
+    
+		    	$("#btnCleanAllPolygon").click(function(){
+    
+		    		polygonPoints97=[];
+		    		polygonPoints97O=[];
+		    		polygonPoints=[];
+		    		polygonJSONString=[];
+		    		polygonCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+		    		for(var i=0;i<polygons.length;i++){
+		    			polygons[i].setMap(null);
+		    			polygonMarkers[i+1].setMap(null);   
+		    		}
+    		    	
+		    		//infowindowPolygon=[];
+		    		infowindowPolygons=[];
+ 
+		    	});// END CLEANBTN 
+    			
+    			$(newClearPolygon).click(function(){
+    
+		    		polygonPoints97=[];
+		    		polygonPoints97O=[];
+		    		polygonPoints=[];
+		    		polygonJSONString=[];
+		    		polygonCount=0;
+    
+		    		document.getElementById("textInput").innerHTML="";
+    
+		    		for(var i=0;i<polygons.length;i++){
+		    			polygons[i].setMap(null);
+		    			polygonMarkers[i+1].setMap(null);   
+		    		}
+    		    	
+		    		//infowindowPolygon=[];
+		    		infowindowPolygons=[];
+ 
+		    	});// END CLEANBTN
+		    //***************************************************// 
+		    ////////////   click to clean allpolygon  end /////////
+		    //***************************************************//  
+
+    		
+    		//***************************************************// 
+		    ////////////   click to clean rectangle  start ////////
+		    //***************************************************//
+
+		    	$(newClearRecatngle).on('click',function(){
+		    		checkRectangle=0;
+		    		tempRectangle.setMap(null);
+		    		$("div[class='toast']").remove();
+		    		imageLink4btn = "";
+		    		xWidth=0;
+		    		yHeight=0;
+
+		    	});
+
+		    //***************************************************// 
+		    ////////////   click to clean rectangle  end ////////
+		    //***************************************************//
+
+
+    		
+    
+    
+		    //***************************************************// 
+		    ////////////  option checkbox behavior start  /////////
+		    //***************************************************// 
+    
+		    ///////////////point//////////////////////
+    
+		    	$("#pointOptionNotAll").change(function()
+		    	{
+		    		if($("#pointOptionNotAll").prop("checked")==true){
+		    			$(".pointOption").prop("checked",false);
+		    		}
+		    		
+		    	});
+    
+		    	$(".pointOption").change(function(){
+    
+		    		if($("#pointOptionNotAll").prop("checked")==true){
+		    			$("#pointOptionNotAll").prop("checked",false);
+		    		}
+    
+		    	});
+    
+		    ///////////////polyline////////////////////
+    
+		    	$("#polylineOptionNotAll").change(function()
+		    	{
+		    		if($("#polylineOptionNotAll").prop("checked")==true){
+		    			$(".polylineOption").prop("checked",false);
+		    		}
+		    		
+		    	});
+    
+		    
+    
+		    	$(".polylineOption").change(function(){
+    
+		    		if($("#polylineOptionNotAll").prop("checked")==true){
+		    			$("#polylineOptionNotAll").prop("checked",false);
+		    		}
+    
+		    	});
+    
+		    ///////////////polygon/////////////////////
+    
+		    	$("#polygonOptionNotAll").change(function()
+		    	{
+		    		if($("#polygonOptionNotAll").prop("checked")==true){
+		    			$(".polygonOption").prop("checked",false);
+		    		}
+		    		
+		    	});
+    
+		    	$(".polygonOption").change(function(){
+    
+		    		if($("#polygonOptionNotAll").prop("checked")==true){
+		    			$("#polygonOptionNotAll").prop("checked",false);
+		    		}
+    
+		    	});
+    
+    
+		    //***************************************************// 
+		    ////////////// option checkbox behavior end  //////////
+		    //***************************************************// 
+
+		    //***************************************************// 
+			//////////////  search by LatLng coor start  //////////
+			//***************************************************// 
+
+
+			////////////////START LATLNGTAB SELECTED ENTER SEARCH/////////////////////
+
+
+			//////////////////start enter search///////////////////////////
+			$("#modalSearchByLL").keypress(function(event){
+
+				if(event.which=="13"){
+    		 	
+    		 			if($("#searchInput3").prop("value")=="" || $("#searchInput4").prop("value")==""){
+							alert("經緯度輸入欄位空白,請重新檢查!");
+						}
+    		 	
+    		 			else{
+
+    		 			//alert("ok");	
+
+    		 				$("#modalSearchByLL").css("display","none");
+							$("#lean-overlay").css("display","none");
+
+					        var sLat = $("#searchInput4").prop("value");
+					        var sLng = $("#searchInput3").prop("value");
+        
+					        var newCenter = new google.maps.LatLng(sLat,sLng);
+			        
+					        map.setCenter(newCenter);
+					        map.setZoom(15);
+        
+					        var sMarker = new google.maps.Marker({
+        
+					        	position:newCenter,
+					        	animation:google.maps.Animation.DROP,
+					        	map:map,
+        
+					        });
+        
+					        sMarker.zindex = pointID;
+					        pointID++;
+        
+					        markers.push(sMarker);
+        
+					        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+					        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+        
+					        pointJSONString[pointCount]="";
+        
+					        pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+				        
+					        pointCount++;
+        
+					        var description =  "E坐標(原始):"+showPoint.X+"<br />";
+					        var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+					        var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+					        var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+					        var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+					        var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+					        var description6 = "經度:"+sLng+"<br />";
+					        var description7 = "緯度:"+sLat+"<br />";
+        
+					        var descriptionLL="";
+					        var descriptionNEO="";
+					        var descriptionNEN="";
+					        var descriptionNED="";
+        
+					        var descriptionAll="";
+        
+					        ///////////////////////////// description for lat lng//////////////////////////////////////////////
+					        if($("#pointOptionLatLng").prop("checked")==true){
+					        	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionLatLng").prop("checked")==false){
+					        	descriptionLL="";
+					        }
+        
+        
+					        ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOriginEN").prop("checked")==true ){
+					        	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+					        }
+     
+					        else if($("#pointOptionOriginEN").prop("checked")==false){
+					        	descriptionNEO="";
+					        }
+				        
+        
+					        ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOptimalEN").prop("checked")==true){
+					        	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionOptimalEN").prop("checked")==false){
+					        	descriptionNEN="";
+					        }
+        
+					        ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+					        if($("#pointOptionDifferenceEN").prop("checked")==true){
+					        	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					        	descriptionNED="";
+					        }
+        
+        
+					        if($("#pointOptionNotAll").prop("checked")==true){
+					        
+					        }
+        
+					        else if($("#pointOptionNotAll").prop("checked")==false){
+        
+					        
+					        	infowindow = new google.maps.InfoWindow({
+					        	
+					        		content:"<div>"+"<table class='striped'>"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+					        	
+					        	});
+        
+					        	infowindows.push(infowindow);
+        
+					        	infowindow.open(map,sMarker);
+        
+					        }
+        
+					        google.maps.event.addListener(sMarker,'click',function(){
+					        
+					        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+					        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+        
+					        	var description =  "E坐標(原始):"+showPoint.X+"<br />";
+					        	var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+					        	var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+					        	var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+					        	var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+					        	var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+					        	var description6 = "經度:"+sLng+"<br />";
+					        	var description7 = "緯度:"+sLat+"<br />";
+        
+					        	var descriptionLL ="";
+					        	var descriptionNEO="";
+					        	var descriptionNEN="";
+					        	var descriptionNED="";
+        
+					        	var descriptionAll="";
+        
+					        	 ///////////////////////////// description for lat lng//////////////////////////////////////////////
+					        if($("#pointOptionLatLng").prop("checked")==true){
+					        	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionLatLng").prop("checked")==false){
+					        	descriptionLL="";
+					        }
+        
+        
+					        ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOriginEN").prop("checked")==true ){
+					        	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+					        }
+     
+					        else if($("#pointOptionOriginEN").prop("checked")==false){
+					        	descriptionNEO="";
+					        }
+				        
+        
+					        ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOptimalEN").prop("checked")==true){
+					        	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionOptimalEN").prop("checked")==false){
+					        	descriptionNEN="";
+					        }
+        
+					        ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+					        if($("#pointOptionDifferenceEN").prop("checked")==true){
+					        	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					        	descriptionNED="";
+					        }
+        
+        
+					        if($("#pointOptionNotAll").prop("checked")==true){
+					        
+					        }
+        
+					        else if($("#pointOptionNotAll").prop("checked")==false){
+        
+					        
+					        	infowindow = new google.maps.InfoWindow({
+					        	
+					        		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+					        	
+					        	});
+        
+					        	infowindows.push(infowindow);
+        
+					        	infowindow.open(map,sMarker);
+        
+					        }
+					        
+        
+					        });//END CLICK ADD MARKER EVENT
+        
+					        google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+        
+					        	//sMarker.setMap(null);
+					        	//markers.pop();
+        
+					        	sMarker.setMap(null);
+        
+					        	for(var i=0;i<pointID;i++){
+        
+					        		if(i==sMarker.zindex){
+        
+					        			for(var j=i+1;j<pointID;j++){
+					        				markers[j].zindex = markers[j].zindex-1;
+					        			}
+        
+					        			markers.splice(i,1);
+					        			pointJSONString.splice(i,1);
+        
+					        			pointID=pointID-1; 
+					        			pointCount = pointCount-1;
+        
+					        		}
+					        	}
+        
+					        });//end mark right click event
+        
+					      }//end else check the whether input column is empty 
+
+    		 		 }//end press enter to search
+
+				});
+			////////////////////end enter search///////////////////////////
+
+
+			/////////////start click search by latlng
+
+			  $("#searchBtn2").click(function(){	
+
+			  	if($("#searchInput3").prop("value")=="" || $("#searchInput4").prop("value")==""){
+					alert("經緯度輸入欄位空白,請重新檢查!");
+				}
+
+				else if($("#searchInput3").prop("value")!="" && $("#searchInput4").prop("value")!=""){
+    				
+					$("#modalSearchByLL").css("display","none");
+					$("#lean-overlay").css("display","none");
+
+				    var sLat = $("#searchInput4").prop("value");
+				    var sLng = $("#searchInput3").prop("value");
+    
+				    var newCenter = new google.maps.LatLng(sLat,sLng);
+			    
+				    map.setCenter(newCenter);
+				    map.setZoom(15);
+    
+				    var sMarker = new google.maps.Marker({
+    
+				    	position:newCenter,
+				    	animation:google.maps.Animation.DROP,
+				    	map:map,
+    
+				    });
+    
+				    sMarker.zindex = pointID;
+				    pointID++;
+    
+				    markers.push(sMarker);
+    
+				    convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+				    convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+    
+    
+				    pointJSONString[pointCount]="";
+    
+				    pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+				    
+				    pointCount++;
+    
+				    var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				    var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				    var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				    var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				    var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				    var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				    var description6 = "經度:"+sLng+"<br />";
+				    var description7 = "緯度:"+sLat+"<br />";
+    
+				    var descriptionLL="";
+				    var descriptionNEO="";
+				    var descriptionNEN="";
+				    var descriptionNED="";
+    
+				    var descriptionAll="";
+    
+				     ///////////////////////////// description for lat lng//////////////////////////////////////////////
+					    if($("#pointOptionLatLng").prop("checked")==true){
+					    	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+					    }
+    
+					    else if($("#pointOptionLatLng").prop("checked")==false){
+					    	descriptionLL="";
+					    }
+    
+    
+					    ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+					    if($("#pointOptionOriginEN").prop("checked")==true ){
+					    	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+					    }
+ 
+					    else if($("#pointOptionOriginEN").prop("checked")==false){
+					    	descriptionNEO="";
+					    }
+				    
+    
+					    ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+					    if($("#pointOptionOptimalEN").prop("checked")==true){
+					    	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+					    }
+    
+					    else if($("#pointOptionOptimalEN").prop("checked")==false){
+					    	descriptionNEN="";
+					    }
+    
+					    ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+    
+					    if($("#pointOptionDifferenceEN").prop("checked")==true){
+					    	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+					    }
+    
+					    else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					    	descriptionNED="";
+					    }
+    
+    
+					    if($("#pointOptionNotAll").prop("checked")==true){
+					    
+					    }
+    
+					    else if($("#pointOptionNotAll").prop("checked")==false){
+    
+					    
+					    	infowindow = new google.maps.InfoWindow({
+					    	
+					    		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+					    	
+					    	});
+    
+					    	infowindows.push(infowindow);
+    
+					    	infowindow.open(map,sMarker);
+    
+					    }
+    
+				   		google.maps.event.addListener(sMarker,'click',function(){
+				    	
+				    	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+				    	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+    
+				    	var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				    	var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				    	var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				    	var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				    	var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				    	var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				    	var description6 = "經度:"+sLng+"<br />";
+				    	var description7 = "緯度:"+sLat+"<br />";
+    
+				    	var descriptionLL ="";
+				    	var descriptionNEO="";
+				    	var descriptionNEN="";
+				    	var descriptionNED="";
+    
+				    	var descriptionAll="";
+    
+				    	if($("#pointOptionLatLng").prop("checked")==true){
+					        	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionLatLng").prop("checked")==false){
+					        	descriptionLL="";
+					        }
+        
+        
+					        ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOriginEN").prop("checked")==true ){
+					        	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+					        }
+     
+					        else if($("#pointOptionOriginEN").prop("checked")==false){
+					        	descriptionNEO="";
+					        }
+				        
+        
+					        ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+					        if($("#pointOptionOptimalEN").prop("checked")==true){
+					        	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionOptimalEN").prop("checked")==false){
+					        	descriptionNEN="";
+					        }
+        
+					        ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+					        if($("#pointOptionDifferenceEN").prop("checked")==true){
+					        	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+					        }
+        
+					        else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					        	descriptionNED="";
+					        }
+        
+        
+					        if($("#pointOptionNotAll").prop("checked")==true){
+					        
+					        }
+        
+					        else if($("#pointOptionNotAll").prop("checked")==false){
+        
+					        
+					        	infowindow = new google.maps.InfoWindow({
+					        	
+					        		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+					        	
+					        	});
+        
+					        	infowindows.push(infowindow);
+        
+					        	infowindow.open(map,sMarker);
+        
+					        }
+				    	
+    
+				    });//END CLICK ADD MARKER EVENT
+    
+				    google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+    
+				    	//sMarker.setMap(null);
+				    	//markers.pop();
+    
+				    	sMarker.setMap(null);
+    
+				    	for(var i=0;i<pointID;i++){
+    
+				    		if(i==sMarker.zindex){
+    
+				    			for(var j=i+1;j<pointID;j++){
+				    				markers[j].zindex = markers[j].zindex-1;
+				    			}
+    
+				    			markers.splice(i,1);
+				    			pointJSONString.splice(i,1);
+    
+				    			pointID=pointID-1; 
+				    			pointCount = pointCount-1;
+    
+				    		}
+				    	}
+    
+				    });//end mark right click event
+
+				   }// end else if empty check
+
+
+				});// END SEARCHBTN 
+			  
+			  
+
+			
+
+			//***************************************************// 
+			////////////// search by LatLng coor end   ////////////
+			//***************************************************// 
+
+			
+			//***************************************************// 
+			//////////////   search by ADDRESS start   ////////////
+			//***************************************************// 
+
+
+			
+
+			//////////////////start enter search///////////////////////////
+			
+
+			$("#modalSearchByAddress").keypress(function(event){
+
+				if(event.which=="13"){
+
+    		 		if($("#searchInput5").prop("value")==""){
+						alert("地址輸入欄位空白,請重新檢查!");
+					}
+
+					else{
+						
+						$("#modalSearchByAddress").css("display","none");
+						$("#lean-overlay").css("display","none");
+						
+						var address = $("#searchInput5").val();
+		    
+				    	geocorder.geocode(
+    
+				    	{"address":address},
+			    
+				    	function(result,status){
+    
+				    		if(status==google.maps.GeocoderStatus.OK){
+    
+				    			map.setCenter(result[0].geometry.location);
+    
+				    			var sMarker = new google.maps.Marker({
+    
+				    				position:result[0].geometry.location,
+				    				animation:google.maps.Animation.DROP,
+				    				map:map
+    
+				    	});
+    
+				    			sMarker.zindex = pointID;
+				    			pointID++;
+    
+				    			markers.push(sMarker);
+    
+				    			convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+				    			convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+    
+				    			pointJSONString[pointCount]="";
+    
+				    			pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+				    
+				    			pointCount++;
+				    			
+				    			var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				    			var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				    			var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				    			var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				    			var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				    			var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				    			var description6 = "經度:"+sMarker.getPosition().lng()+"<br />";
+				    			var description7 = "緯度:"+sMarker.getPosition().lat()+"<br />";
+    
+				    			var descriptionLL="";
+				    			var descriptionNEO="";
+				    			var descriptionNEN="";
+				    			var descriptionNED="";
+    
+				    			var descriptionAll="";
+    
+				    			///////////////////////////// description for lat lng//////////////////////////////////////////////
+				    			if($("#pointOptionLatLng").prop("checked")==true){
+				    				descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionLatLng").prop("checked")==false){
+				    				descriptionLL="";
+				    			}
+    
+    
+				    			///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				    			if($("#pointOptionOriginEN").prop("checked")==true){
+				    				descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionOriginEN").prop("checked")==false){
+				    				descriptionNEO="";
+				    			}
+				    
+    
+				    			///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				    			if($("#pointOptionOptimalEN").prop("checked")==true){
+				    				descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionOptimalEN").prop("checked")==false){
+				    				descriptionNEN="";
+				    			}
+    
+				    			///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+    
+				    			if($("#pointOptionDifferenceEN").prop("checked")==true){
+				    				descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				    				descriptionNED="";
+				    			}
+    
+    
+				    			if($("#pointOptionNotAll").prop("checked")==true){
+				    	
+				    			}
+    
+				    			else if($("#pointOptionNotAll").prop("checked")==false){
+    
+				    	
+				    				infowindow = new google.maps.InfoWindow({
+				    		
+				    					content:"<div>"+"<table class='striped'>"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				    		
+				    				});
+    
+				    				infowindows.push(infowindow);
+    
+				    				infowindow.open(map,sMarker);
+    
+				    			}
+
+				    		////////////////
+    
+				    			google.maps.event.addListener(sMarker,'click',function(){
+				    	
+				    				convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+				    				convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+    
+				    				var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				    				var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				    				var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				    				var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				    				var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				    				var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				    				var description6 = "經度:"+sMarker.getPosition().lng()+"<br />";
+				    				var description7 = "緯度:"+sMarker.getPosition().lat()+"<br />";
+    
+				    				var descriptionLL="";
+				    				var descriptionNEO="";
+				    				var descriptionNEN="";
+				    				var descriptionNED="";
+    
+				    				var descriptionAll="";
+    
+				    				///////////////////////////// description for lat lng//////////////////////////////////////////////
+				    			if($("#pointOptionLatLng").prop("checked")==true){
+				    				descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionLatLng").prop("checked")==false){
+				    				descriptionLL="";
+				    			}
+    
+    
+				    			///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				    			if($("#pointOptionOriginEN").prop("checked")==true){
+				    				descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionOriginEN").prop("checked")==false){
+				    				descriptionNEO="";
+				    			}
+				    
+    
+				    			///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				    			if($("#pointOptionOptimalEN").prop("checked")==true){
+				    				descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionOptimalEN").prop("checked")==false){
+				    				descriptionNEN="";
+				    			}
+    
+				    			///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+    
+				    			if($("#pointOptionDifferenceEN").prop("checked")==true){
+				    				descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				    			}
+    
+				    			else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				    				descriptionNED="";
+				    			}
+    
+    
+				    			if($("#pointOptionNotAll").prop("checked")==true){
+				    	
+				    			}
+    
+				    			else if($("#pointOptionNotAll").prop("checked")==false){
+    
+				    	
+				    				infowindow = new google.maps.InfoWindow({
+				    		
+				    					content:"<div>"+"<table class='striped'>"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				    		
+				    				});
+    
+				    				infowindows.push(infowindow);
+    
+				    				infowindow.open(map,sMarker);
+    
+				    			}
+    
+    
+				    			});//END CLICK ADD MARKER EVENT
+    
+				    			google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+    
+				    				//sMarker.setMap(null);
+				    				//markers.pop();
+    
+				    				sMarker.setMap(null);
+    
+				    				for(var i=0;i<pointID;i++){
+    
+				    					if(i==sMarker.zindex){
+    
+				    						for(var j=i+1;j<pointID;j++){
+				    							markers[j].zindex = markers[j].zindex-1;
+				    						}
+    
+				    						markers.splice(i,1);
+				    						pointJSONString.splice(i,1);
+    
+				    						pointID=pointID-1; 
+				    						pointCount = pointCount-1;
+    
+				    						}
+				    				}
+    
+				    			});//end mark right click event	
+    
+				    					}//end if
+    
+				    					else {
+				    						alert("Google 無法取得您輸入的地址,錯誤代碼為"+status);
+				    					}//end else
+    
+				    				}//end function
+    
+				    			);//end geocorder.geocode
+
+
+							}
+
+					}//end else check input is not empty
+
+				});				    	
+			
+			///////////////////////end enter search///////////////
+    		 	$("#searchBtn3").click(function(){
+    		 		
+
+    		 		if($("#searchInput5").prop("value")=="" && $("input:checked").attr("id")=="searchByAddress"){
+						alert("地址輸入欄位空白,請重新檢查!");
+					}
+
+					else{
+
+						$("#modalSearchByAddress").css("display","none");
+						$("#lean-overlay").css("display","none");
+
+					    var address = $("#searchInput5").val();
+		    
+				        geocorder.geocode(
+    
+					    {"address":address},
+			    
+					    function(result,status){
+    
+					    	if(status==google.maps.GeocoderStatus.OK){
+    
+					    		map.setCenter(result[0].geometry.location);
+    
+					    		var sMarker = new google.maps.Marker({
+    
+					    			position:result[0].geometry.location,
+					    			animation:google.maps.Animation.DROP,
+					    			map:map
+    
+					    		});
+    
+					    		sMarker.zindex = pointID;
+					    		pointID++;
+    
+					    		markers.push(sMarker);
+    
+					    		convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+					    		convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+    
+					    		pointJSONString[pointCount]="";
+    
+					    		pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+				    
+					    		pointCount++;
+					    		
+					    		var description =  "E坐標(原始):"+showPoint.X+"<br />";
+					    		var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+					    		var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+					    		var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+					    		var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+					    		var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+					    		var description6 = "經度:"+sMarker.getPosition().lng()+"<br />";
+					    		var description7 = "緯度:"+sMarker.getPosition().lat()+"<br />";
+    
+					    		var descriptionLL="";
+					    		var descriptionNEO="";
+					    		var descriptionNEN="";
+					    		var descriptionNED="";
+    
+					    		var descriptionAll="";
+    
+					    		///////////////////////////// description for lat lng//////////////////////////////////////////////
+				        			if($("#pointOptionLatLng").prop("checked")==true){
+				        				descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionLatLng").prop("checked")==false){
+				        				descriptionLL="";
+				        			}
+        
+        
+				        			///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				        			if($("#pointOptionOriginEN").prop("checked")==true){
+				        				descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionOriginEN").prop("checked")==false){
+				        				descriptionNEO="";
+				        			}
+				        
+        
+				        			///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				        			if($("#pointOptionOptimalEN").prop("checked")==true){
+				        				descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionOptimalEN").prop("checked")==false){
+				        				descriptionNEN="";
+				        			}
+        
+				        			///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+				        			if($("#pointOptionDifferenceEN").prop("checked")==true){
+				        				descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				        				descriptionNED="";
+				        			}
+        
+        
+				        			if($("#pointOptionNotAll").prop("checked")==true){
+				        	
+				        			}
+        
+				        			else if($("#pointOptionNotAll").prop("checked")==false){
+        
+				        	
+				        				infowindow = new google.maps.InfoWindow({
+				        		
+				        					content:"<div>"+"<table class='striped'>"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				        		
+				        				});
+        
+				        				infowindows.push(infowindow);
+        
+				        				infowindow.open(map,sMarker);
+        
+				        			}
+					    
+					    	////////////////
+    
+					    		google.maps.event.addListener(sMarker,'click',function(){
+					    
+					    			convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+					    			convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+    
+					    			var description =  "E坐標(原始):"+showPoint.X+"<br />";
+					    			var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+					    			var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+					    			var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+					    			var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+					    			var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+					    			var description6 = "經度:"+sMarker.getPosition().lng()+"<br />";
+					    			var description7 = "緯度:"+sMarker.getPosition().lat()+"<br />";
+    
+					    			var descriptionLL="";
+					    			var descriptionNEO="";
+					    			var descriptionNEN="";
+					    			var descriptionNED="";
+    
+					    			var descriptionAll="";
+    
+					    			///////////////////////////// description for lat lng//////////////////////////////////////////////
+				        			if($("#pointOptionLatLng").prop("checked")==true){
+				        				descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionLatLng").prop("checked")==false){
+				        				descriptionLL="";
+				        			}
+        
+        
+				        			///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				        			if($("#pointOptionOriginEN").prop("checked")==true){
+				        				descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionOriginEN").prop("checked")==false){
+				        				descriptionNEO="";
+				        			}
+				        
+        
+				        			///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				        			if($("#pointOptionOptimalEN").prop("checked")==true){
+				        				descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionOptimalEN").prop("checked")==false){
+				        				descriptionNEN="";
+				        			}
+        
+				        			///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+				        			if($("#pointOptionDifferenceEN").prop("checked")==true){
+				        				descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				        			}
+        
+				        			else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				        				descriptionNED="";
+				        			}
+        
+        
+				        			if($("#pointOptionNotAll").prop("checked")==true){
+				        	
+				        			}
+        
+				        			else if($("#pointOptionNotAll").prop("checked")==false){
+        
+				        	
+				        				infowindow = new google.maps.InfoWindow({
+				        		
+				        					content:"<div>"+"<table class='striped'>"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				        		
+				        				});
+        
+				        				infowindows.push(infowindow);
+        
+				        				infowindow.open(map,sMarker);
+        
+				        			}
+    
+    
+					    		});//END CLICK ADD MARKER EVENT
+    
+					    		google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+    
+					    			//sMarker.setMap(null);
+					    			//markers.pop();
+    
+					    			sMarker.setMap(null);
+    
+					    			for(var i=0;i<pointID;i++){
+    
+					    				if(i==sMarker.zindex){
+    
+					    					for(var j=i+1;j<pointID;j++){
+					    						markers[j].zindex = markers[j].zindex-1;
+					    					}
+    
+					    					markers.splice(i,1);
+					    					pointJSONString.splice(i,1);
+    
+					    					pointID=pointID-1; 
+					    					pointCount = pointCount-1;
+    
+					    					}
+					    			}
+    
+					    		});//end mark right click event	
+    
+					    				}//end if
+    
+					    				else {
+					    					alert("Google 無法取得您輸入的地址,錯誤代碼為"+status);
+					    				}//end else
+    
+					    			}//end function
+    
+					    		);//end geocorder.geocode
+    
+					    }//end else
+
+    			});// END SEARCHBTN for address
+
+			//***************************************************// 
+			//////////////    search by ADDRESS end    ////////////
+			//***************************************************//	
+
+
+			//***************************************************// 
+			//////////////     search by TWD97 start   ////////////
+			//***************************************************// 
+
+			$("#modalSearchBy97").keypress(function(event){
+
+				if(event.which=="13"){
+
+					if($("#searchInput1").prop("value")=="" || $("#searchInput2").prop("value")==""){
+						alert("TWD97坐標輸入欄位空白,請重新檢查!");
+					}
+
+					else{
+
+						$("#modalSearchBy97").css("display","none");
+						$("#lean-overlay").css("display","none");
+
+						convert2LatLng($("#searchInput1").prop("value"),$("#searchInput2").prop("value"),0.9999,newLatLng);
+    
+				        var newCenter = new google.maps.LatLng(newLatLng.Lt,newLatLng.Ln);
+			        
+				        map.setCenter(newCenter);
+				        map.setZoom(15);
+        
+				        var sMarker = new google.maps.Marker({
+        
+				        	position:newCenter,
+				        	animation:google.maps.Animation.DROP,
+				        	map:map,
+        
+				        });
+        
+				        sMarker.zindex = pointID;
+				        pointID++;
+        
+				        markers.push(sMarker);
+        
+				        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+				        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+        
+        
+				        pointJSONString[pointCount]="";
+        
+				        pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+				        
+				        pointCount++;
+        
+				        var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				        var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				        var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				        var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				        var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				        var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				        var description6 = "經度:"+newCenter.lat().toFixed(6)+"<br />";
+				        var description7 = "緯度:"+newCenter.lng().toFixed(6)+"<br />";
+        
+				        var descriptionLL="";
+				        var descriptionNEO="";
+				        var descriptionNEN="";
+				        var descriptionNED="";
+        
+				        var descriptionAll="";
+        
+				        ///////////////////////////// description for lat lng//////////////////////////////////////////////
+				        if($("#pointOptionLatLng").prop("checked")==true){
+				        	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				        }
+
+				        else if($("#pointOptionLatLng").prop("checked")==false){
+				        	descriptionLL="";
+				        }
+        
+				        ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				        if($("#pointOptionOriginEN").prop("checked")==true){
+				        	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				        }
+        
+				        else if($("#pointOptionOriginEN").prop("checked")==false && $("#pointOptionOriginN").prop("checked")==false){
+				        	descriptionNEO="";
+				        }
+				        
+				        ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				        if($("#pointOptionOptimalEN").prop("checked")==true){
+				        	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				        }
+       
+				        else if($("#pointOptionOptimalEN").prop("checked")==false){
+				        	descriptionNEN="";
+				        }
+        
+				        ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+				        if($("#pointOptionDifferenceEN").prop("checked")==true){
+				        	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				        }
+        
+				        else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				        	descriptionNED="";
+				        }
+        
+        
+				        if($("#pointOptionNotAll").prop("checked")==true){
+				        	
+				        }
+        
+				        else if($("#pointOptionNotAll").prop("checked")==false){
+        
+				        	
+				        	infowindow = new google.maps.InfoWindow({
+				        		
+				        		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				        		
+				        	});
+        
+				        	infowindows.push(infowindow);
+        
+				        	infowindow.open(map,sMarker);
+        
+				        }
+        
+				        google.maps.event.addListener(sMarker,'click',function(){
+				        	
+				        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+				        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+        
+				        	var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				        	var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				        	var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				        	var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				        	var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				        	var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				        	var description6 = "經度:"+newCenter.lat().toFixed(6)+"<br />";
+				        	var description7 = "緯度:"+newCenter.lng().toFixed(6)+"<br />";
+        
+        
+				        	var descriptionLL ="";
+				        	var descriptionNEO="";
+				        	var descriptionNEN="";
+				        	var descriptionNED="";
+        
+				        	var descriptionAll="";
+        
+				        	///////////////////////////// description for lat lng//////////////////////////////////////////////
+				        if($("#pointOptionLatLng").prop("checked")==true){
+				        	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				        }
+
+				        else if($("#pointOptionLatLng").prop("checked")==false){
+				        	descriptionLL="";
+				        }
+        
+				        ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				        if($("#pointOptionOriginEN").prop("checked")==true){
+				        	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				        }
+        
+				        else if($("#pointOptionOriginEN").prop("checked")==false && $("#pointOptionOriginN").prop("checked")==false){
+				        	descriptionNEO="";
+				        }
+				        
+				        ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				        if($("#pointOptionOptimalEN").prop("checked")==true){
+				        	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				        }
+       
+				        else if($("#pointOptionOptimalEN").prop("checked")==false){
+				        	descriptionNEN="";
+				        }
+        
+				        ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+        
+				        if($("#pointOptionDifferenceEN").prop("checked")==true){
+				        	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				        }
+        
+				        else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				        	descriptionNED="";
+				        }
+        
+        
+				        if($("#pointOptionNotAll").prop("checked")==true){
+				        	
+				        }
+        
+				        else if($("#pointOptionNotAll").prop("checked")==false){
+        
+				        	
+				        	infowindow = new google.maps.InfoWindow({
+				        		
+				        		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				        		
+				        	});
+        
+				        	infowindows.push(infowindow);
+        
+				        	infowindow.open(map,sMarker);
+        
+				        }
+				        	
+        
+				        });//END CLICK ADD MARKER EVENT
+        
+				        google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+        
+				        	//sMarker.setMap(null);
+				        	//markers.pop();
+        
+				        	sMarker.setMap(null);
+        
+				        	for(var i=0;i<pointID;i++){
+        
+				        		if(i==sMarker.zindex){
+        
+				        			for(var j=i+1;j<pointID;j++){
+				        				markers[j].zindex = markers[j].zindex-1;
+				        			}
+        
+				        			markers.splice(i,1);
+				        			pointJSONString.splice(i,1);
+        
+				        			pointID=pointID-1; 
+				        			pointCount = pointCount-1;
+        
+				        		}
+				        	}
+        
+				        });//end mark right click event
+
+					}//end else
+
+				    }//end if for check if searchby97 radio checked 
+    
+				});//end keypress function for searchby97
+
+			    $("#searchBtn1").click(function(){
+
+						if($("#searchInput1").prop("value")=="" || $("#searchInput2").prop("value")==""){
+							alert("TWD97坐標輸入欄位空白,請重新檢查!");
+						}
+
+						else{
+							$("#modalSearchBy97").css("display","none");
+							$("#lean-overlay").css("display","none");
+
+							convert2LatLng($("#searchInput1").prop("value"),$("#searchInput2").prop("value"),0.9999,newLatLng);
+    
+			    			var newCenter = new google.maps.LatLng(newLatLng.Lt,newLatLng.Ln);
+			            
+			    	        map.setCenter(newCenter);
+			    	        map.setZoom(15);
+            
+			    	        var sMarker = new google.maps.Marker({
+            
+			    	        	position:newCenter,
+			    	        	animation:google.maps.Animation.DROP,
+			    	        	map:map,
+            
+			    	        });
+            
+			    	        sMarker.zindex = pointID;
+			    	        pointID++;
+            
+			    	        markers.push(sMarker);
+            
+			    	        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.9999,showPoint);
+			    	        convert297s(sMarker.getPosition().lat(),sMarker.getPosition().lng(),0.999942,showPointO);
+            
+            
+			    	        pointJSONString[pointCount]="";
+            
+			    	        pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;
+			    	        
+			    	        pointCount++;
+            
+			    	        var description =  "E坐標(原始):"+showPoint.X+"<br />";
+			    	        var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+			    	        var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+			    	        var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+			    	        var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+			    	        var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+			    	        var description6 = "經度:"+newCenter.lat().toFixed(6)+"<br />";
+			    	        var description7 = "緯度:"+newCenter.lng().toFixed(6)+"<br />";
+            
+			    	        var descriptionLL="";
+			    	        var descriptionNEO="";
+			    	        var descriptionNEN="";
+			    	        var descriptionNED="";
+            
+			    	        var descriptionAll="";
+            
+			    	        ///////////////////////////// description for lat lng//////////////////////////////////////////////
+				                if($("#pointOptionLatLng").prop("checked")==true){
+				                	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				                }
+        
+				                else if($("#pointOptionLatLng").prop("checked")==false){
+				                	descriptionLL="";
+				                }
+                
+				                ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				                if($("#pointOptionOriginEN").prop("checked")==true){
+				                	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				                }
+                
+				                else if($("#pointOptionOriginEN").prop("checked")==false && $("#pointOptionOriginN").prop("checked")==false){
+				                	descriptionNEO="";
+				                }
+				                
+				                ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				                if($("#pointOptionOptimalEN").prop("checked")==true){
+				                	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				                }
+               
+				                else if($("#pointOptionOptimalEN").prop("checked")==false){
+				                	descriptionNEN="";
+				                }
+                
+				                ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+                
+				                if($("#pointOptionDifferenceEN").prop("checked")==true){
+				                	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				                }
+                
+				                else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				                	descriptionNED="";
+				                }
+                
+                
+				                if($("#pointOptionNotAll").prop("checked")==true){
+				                	
+				                }
+                
+				                else if($("#pointOptionNotAll").prop("checked")==false){
+                
+				                	
+				                	infowindow = new google.maps.InfoWindow({
+				                		
+				                		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				                		
+				                	});
+                
+				                	infowindows.push(infowindow);
+                
+				                	infowindow.open(map,sMarker);
+                
+				                }
+            
+			    	        	google.maps.event.addListener(sMarker,'click',function(){
+			    	        	
+			    	        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+			    	        	convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+            
+			    	        	var description =  "E坐標(原始):"+showPoint.X+"<br />";
+			    	        	var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+			    	        	var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+			    	        	var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+			    	        	var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+			    	        	var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+			    	        	var description6 = "經度:"+newCenter.lat().toFixed(6)+"<br />";
+			    	        	var description7 = "緯度:"+newCenter.lng().toFixed(6)+"<br />";
+            
+            
+			    	        	var descriptionLL ="";
+			    	        	var descriptionNEO="";
+			    	        	var descriptionNEN="";
+			    	        	var descriptionNED="";
+            
+			    	        	var descriptionAll="";
+            
+			    	        	///////////////////////////// description for lat lng//////////////////////////////////////////////
+				                if($("#pointOptionLatLng").prop("checked")==true){
+				                	descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				                }
+        
+				                else if($("#pointOptionLatLng").prop("checked")==false){
+				                	descriptionLL="";
+				                }
+                
+				                ///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				                if($("#pointOptionOriginEN").prop("checked")==true){
+				                	descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				                }
+                
+				                else if($("#pointOptionOriginEN").prop("checked")==false && $("#pointOptionOriginN").prop("checked")==false){
+				                	descriptionNEO="";
+				                }
+				                
+				                ///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				                if($("#pointOptionOptimalEN").prop("checked")==true){
+				                	descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				                }
+               
+				                else if($("#pointOptionOptimalEN").prop("checked")==false){
+				                	descriptionNEN="";
+				                }
+                
+				                ///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+                
+				                if($("#pointOptionDifferenceEN").prop("checked")==true){
+				                	descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				                }
+                
+				                else if($("#pointOptionDifferenceEN").prop("checked")==false){
+				                	descriptionNED="";
+				                }
+                
+                
+				                if($("#pointOptionNotAll").prop("checked")==true){
+				                	
+				                }
+                
+				                else if($("#pointOptionNotAll").prop("checked")==false){
+                
+				                	
+				                	infowindow = new google.maps.InfoWindow({
+				                		
+				                		content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+				                		
+				                	});
+                
+				                	infowindows.push(infowindow);
+                
+				                	infowindow.open(map,sMarker);
+                
+				                }
+			    	        	
+            
+			    	        });//END CLICK ADD MARKER EVENT
+            
+			    	        google.maps.event.addListener(sMarker,"rightclick",function(mouse){
+            
+			    	        	//sMarker.setMap(null);
+			    	        	//markers.pop();
+            
+			    	        	sMarker.setMap(null);
+            
+			    	        	for(var i=0;i<pointID;i++){
+            
+			    	        		if(i==sMarker.zindex){
+            
+			    	        			for(var j=i+1;j<pointID;j++){
+			    	        				markers[j].zindex = markers[j].zindex-1;
+			    	        			}
+            
+			    	        			markers.splice(i,1);
+			    	        			pointJSONString.splice(i,1);
+            
+			    	        			pointID=pointID-1; 
+			    	        			pointCount = pointCount-1;
+            
+			    	        		}
+			    	        	}
+            
+			    	        });//end mark right click event
+
+
+    					}//end else
+    
+			    });// END SEARCHBTN OOR
+
+
+			//***************************************************// 
+			//////////////     search by TWD97  end    ////////////
+			//***************************************************// 
+
+			//***************************************************// 
+			//////////////   click to add point start  ////////////
+			//***************************************************// 
+
+			google.maps.event.addListener(drawingmanager,'markercomplete',function(event){
+			
+				event.zindex = pointID;
+				pointID++;
+			
+				markers.push(event);
+
+				convert297s(event.getPosition().lat(),event.getPosition().lng(),0.9999,showPoint);
+				convert297s(event.getPosition().lat(),event.getPosition().lng(),0.999942,showPointO);
+
+				pointJSONString[pointCount]="";
+				pointJSONString[pointCount] = showPoint.X+","+showPoint.Y;		
+				pointCount++;
+
+				var description =  "E坐標(原始):"+showPoint.X+"<br />";
+				var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+				var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+				var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+				var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+				var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+				var description6 = "經度:"+event.getPosition().lng()+"<br />";
+				var description7 = "緯度:"+event.getPosition().lat()+"<br />";
+
+				var descriptionLL="";
+				var descriptionNEO="";
+				var descriptionNEN="";
+				var descriptionNED="";
+				var descriptionAll="";
+
+				///////////////////////////// description for lat lng//////////////////////////////////////////////
+				if($("#pointOptionLatLng").prop("checked")==true){
+					descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionLatL").prop("checked")==false){
+					descriptionLL="";
+				}
+
+
+				///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				if($("#pointOptionOriginEN").prop("checked")==true){
+					descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionOriginEN").prop("checked")==false){
+					descriptionNEO="";
+				}
+				
+
+				///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				if($("#pointOptionOptimalEN").prop("checked")==true){
+					descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionOptimalEN").prop("checked")==false){
+					descriptionNEN="";
+				}
+
+				///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+
+				if($("#pointOptionDifferenceEN").prop("checked")==true){
+					descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					descriptionNED="";
+				}
+
+
+				if($("#pointOptionNotAll").prop("checked")==true){
+					
+				}
+
+				else if($("#pointOptionNotAll").prop("checked")==false){
+
+					
+					infowindow = new google.maps.InfoWindow({
+						
+						content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+						
+					});
+
+					infowindows.push(infowindow);
+
+					infowindow.open(map,event);
+
+				}
+
+
+				google.maps.event.addListener(event,'click',function(){
+					
+					convert297s(this.getPosition().lat(),this.getPosition().lng(),0.9999,showPoint);
+					convert297s(this.getPosition().lat(),this.getPosition().lng(),0.999942,showPointO);
+
+					var description =  "E坐標(原始):"+showPoint.X+"<br />";
+					var description1 = "N坐標(原始):"+showPoint.Y+"<br />";
+					var description2 = "E坐標(優化):"+showPointO.X+"<br />";
+					var description3 = "N坐標(優化):"+showPointO.Y+"<br />";
+					var description4 = "E坐標差值:"+Math.abs(showPoint.X-showPointO.X).toFixed(3)+"m"+"<br />";
+					var description5 = "N坐標差值:"+Math.abs(showPoint.Y-showPointO.Y).toFixed(3)+"m"+"<br />";
+					var description6 = "經度:"+event.getPosition().lng()+"<br />";
+					var description7 = "緯度:"+event.getPosition().lat()+"<br />";
+
+					var descriptionLL="";
+					var descriptionNEO="";
+					var descriptionNEN="";
+					var descriptionNED="";
+					var descriptionAll="";
+
+					///////////////////////////// description for lat lng//////////////////////////////////////////////
+				if($("#pointOptionLatLng").prop("checked")==true){
+					descriptionLL="<tr><td>"+description6+"</td>"+"<td>"+description7+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionLatL").prop("checked")==false){
+					descriptionLL="";
+				}
+
+
+				///////////////////////////// description for N,E FOR ORIGIN TWD97//////////////////////////////////////////////
+				if($("#pointOptionOriginEN").prop("checked")==true){
+					descriptionNEO="<tr><td>"+description+"</td>"+"<td>"+description1+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionOriginEN").prop("checked")==false){
+					descriptionNEO="";
+				}
+				
+
+				///////////////////////////// description for N,E FOR OPTIMAL TWD97//////////////////////////////////////////////
+				if($("#pointOptionOptimalEN").prop("checked")==true){
+					descriptionNEN="<tr><td>"+description2+"</td>"+"<td>"+description3+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionOptimalEN").prop("checked")==false){
+					descriptionNEN="";
+				}
+
+				///////////////////////////// description for N,E DIFFERENCE////////////////////////////////////////////////////
+
+				if($("#pointOptionDifferenceEN").prop("checked")==true){
+					descriptionNED="<tr><td>"+description4+"</td>"+"<td>"+description5+"</td>"+"</tr>";
+				}
+
+				else if($("#pointOptionDifferenceEN").prop("checked")==false){
+					descriptionNED="";
+				}
+
+
+				if($("#pointOptionNotAll").prop("checked")==true){
+					
+				}
+
+				else if($("#pointOptionNotAll").prop("checked")==false){
+
+					
+					infowindow = new google.maps.InfoWindow({
+						 
+						content:"<div>"+"<table class=\"striped\">"+descriptionLL+descriptionNEO+descriptionNEN+descriptionNED+"</table>"+"</div>"
+						
+					});
+
+					infowindows.push(infowindow);
+
+					infowindow.open(map,event);
+
+				}
+					
+
+				});//END CLICK ADD MARKER EVENT
+
+				google.maps.event.addListener(event,"rightclick",function(mouse){
+
+					event.setMap(null);
+
+					for(var i=0;i<pointID;i++){
+
+						if(i==event.zindex){
+
+							for(var j=i+1;j<pointID;j++){
+								markers[j].zindex = markers[j].zindex-1;
+							}
+
+							markers.splice(i,1);
+							pointJSONString.splice(i,1);
+
+							pointID=pointID-1; 
+							pointCount = pointCount-1;
+
+						}
+					}
+
+					//markers.pop();
+					//pointID = pointID-1;
+					//pointCount = pointCount-1;
+
+				});//end mark right click event
+
+			});//END DRAWINGMANAGER MARKERCOMPLETE EVENT
+
+
+			//***************************************************// 
+			//////////////   click to add point  end   ////////////
+			//***************************************************// 
+
+
+			//***************************************************// 
+			////////////   click to add polyline start ////////////
+			//***************************************************// 
+
+			google.maps.event.addListener(drawingmanager,"polylinecomplete",function(event){
+
+				polylines.push(event);
+				event.zindex = polylineID;
+
+				polylinePoints =[];
+				polylinePoints = event.getPath();
+	
+				var lineMarker = new google.maps.Marker({
+					position: new google.maps.LatLng(polylinePoints.getAt(0).lat(),polylinePoints.getAt(0).lng()),
+					map:map,
+					opacity:0,
+				});
+
+				polylineMarkers[event.zindex]=(lineMarker);
+
+				polylineJSONString[polylineCount]="";
+
+				for(var i=0;i<polylinePoints.length;i++){
+
+					convert297(polylinePoints.getAt(i).lat(),polylinePoints.getAt(i).lng(),0.9999,polylinePoints97);
+					convert297(polylinePoints.getAt(i).lat(),polylinePoints.getAt(i).lng(),0.999942,polylinePoints97O);
+
+					if(i<polylinePoints.length-1){
+						polylineJSONString[polylineCount] += polylinePoints97[i][0]+","+polylinePoints97[i][1]+",";
+					}
+				
+					else if (i==polylinePoints.length-1){
+						polylineJSONString[polylineCount] += polylinePoints97[i][0]+","+polylinePoints97[i][1];
+					}
+
+				}//end for
+				
+				polylineCount=polylineCount+1;
+				polylineID=polylineID+1;
+
+				getPathLength(polylinePoints97,polylinePoints97O,polylineLength);
+
+
+				var descriptionPL =  "測量長"+"(原始):"+polylineLength.L+"m"+"<br />";
+				var descriptionPL1 = "測量長"+"(優化):"+polylineLength.LO+"m"+"<br />";
+				var descriptionPL2 = "長度差:"+Math.abs(polylineLength.L-polylineLength.LO).toFixed(3)+"m";
+
+				var descriptionPLS="";
+				var descriptionPL1S="";
+				var descriptionPL2S="";
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL1+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==true){
+						descriptionPLS="<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL1+"</td></tr>";
+				}
+
+				if ($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==true){
+					descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if ($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==true){
+					descriptionPLS="<tr><td>"+descriptionPL1+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==true){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL1+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==false){
+
+				}
+
+				else {
+
+					infowindowPolyline = new google.maps.InfoWindow({
+					
+						content:"<div>"+"<table class=\"striped\">"+descriptionPLS+"</table>"+"</div>"
+					
+					});
+
+					infowindowPolylines[event.zindex]=(infowindowPolyline);
+					infowindowPolyline.open(map,polylineMarkers[event.zindex]);
+
+				}
+
+				polylinePoints97 =[];
+				polylinePoints97O =[];
+
+				///////////////////////////////click the polyline then add a infowindow///////////////////////////////////////////////
+
+				google.maps.event.addListener(event,'click',function(mouse){
+
+				polylinePoints =[];
+				polylinePoints = event.getPath();
+
+				for(var i=0;i<polylinePoints.length;i++){
+
+					convert297(polylinePoints.getAt(i).lat(),polylinePoints.getAt(i).lng(),0.9999,polylinePoints97);
+					convert297(polylinePoints.getAt(i).lat(),polylinePoints.getAt(i).lng(),0.999942,polylinePoints97O);
+
+				}
+
+				getPathLength(polylinePoints97,polylinePoints97O,polylineLength);
+
+				var descriptionPL =  "測量長"+"(原始):"+polylineLength.L+"m"+"<br />";
+				var descriptionPL1 = "測量長"+"(優化):"+polylineLength.LO+"m"+"<br />";
+				var descriptionPL2 = "長度差:"+Math.abs(polylineLength.L-polylineLength.LO).toFixed(3)+"m";
+
+				var descriptionPLS="";
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>";s
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL1+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==true){
+						descriptionPLS="<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==false){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL1+"</td></tr>";
+				}
+
+				if ($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==true){
+					descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if ($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==true){
+					descriptionPLS="<tr><td>"+descriptionPL1+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==true && $("#polylineOptionOptimalLength").prop("checked")==true && $("#polylineOptionDifferenceLength").prop("checked")==true){
+						descriptionPLS="<tr><td>"+descriptionPL+"</td></tr>"+"<tr><td>"+descriptionPL1+"</td></tr>"+"<tr><td>"+descriptionPL2+"</td></tr>";
+				}
+
+				if($("#polylineOptionLength").prop("checked")==false && $("#polylineOptionOptimalLength").prop("checked")==false && $("#polylineOptionDifferenceLength").prop("checked")==false){
+
+				}
+
+				else {
+
+					infowindowPolyline = new google.maps.InfoWindow({
+					
+						content:"<div>"+"<table class=\"striped\">"+descriptionPLS+"</table>"+"</div>"
+					
+					});
+
+					infowindowPolylines[event.zindex]=(infowindowPolyline);
+					infowindowPolyline.open(map,polylineMarkers[event.zindex]);
+
+				}
+
+				polylinePoints97 =[];
+				polylinePoints97O =[];
+
+			});//end polyline click to add infowindow event
+
+
+
+			google.maps.event.addListener(event,'rightclick',function(mouse){
+
+				event.setMap(null);
+
+				polylineMarkers[event.zindex].setMap(null);
+
+				infowindowPolylines.splice(event.zindex,1);
+			
+				for(var i=0;i<polylineID;i++){
+
+						if(i==event.zindex && i!=polylineID-1){
+
+							for(var j=i+1;j<polylineID;j++){
+								//polylines[j].zindex = polylines[j].zindex-1;
+							}
+
+							polylines.splice(i,1);
+							polylineJSONString.splice(i,1);
+
+							polylineID=polylineID-1; 
+							polylineCount = polylineCount-1;
+
+						}
+
+						else if(i==event.zindex && i==polylineID-1){
+							polylines.splice(i,1);
+							polylineJSONString.splice(i,1);
+
+							polylineID=polylineID-1; 
+							polylineCount = polylineCount-1;
+						}
+				
+				}
+
+				polylinePoints97 =[];
+				polylinePoints97O =[];
+				
+				});//END polyline rightclick event
+
+
+			});//end polylinecomplete event
+
+			//***************************************************// 
+			////////////    click to add polyline end  ////////////
+			//***************************************************// 
+
+
+			//***************************************************// 
+			////////////    click to add polygon start ////////////
+			//***************************************************// 
+
+			google.maps.event.addListener(drawingmanager,'polygoncomplete',function(event){
+
+				polygons.push(event);
+
+				event.zindex = polygonID+1;
+
+				polyongPoints =[];
+				polygonPoints = event.getPath();
+
+				var latA =[];
+				var lngA =[];
+			
+				polygonJSONString[polygonCount]="";			
+
+				for(var i=0;i<polygonPoints.length;i++){
+
+					convert297(polygonPoints.getAt(i).lat(),polygonPoints.getAt(i).lng(),0.9999,polygonPoints97);
+					convert297(polygonPoints.getAt(i).lat(),polygonPoints.getAt(i).lng(),0.999942,polygonPoints97O);
+
+					latA.push(polygonPoints.getAt(i).lat());
+					lngA.push(polygonPoints.getAt(i).lng());
+
+					if(i<polygonPoints.length-1){
+						polygonJSONString[polygonCount] += polygonPoints97[i][0]+","+polygonPoints97[i][1]+",";
+					
+					}
+				
+					else if (i==polygonPoints.length-1){
+						polygonJSONString[polygonCount] += polygonPoints97[i][0]+","+polygonPoints97[i][1]+","+polygonPoints97[0][0]+","+polygonPoints97[0][1];
+					}
+
+				}
+
+				polygonID++;
+				polygonCount++;
+			
+				var latM = findMid(latA);
+				var lngM = findMid(lngA);
+
+				var polygonMarker = new google.maps.Marker({
+						position: new google.maps.LatLng(latM,lngM),
+						map:map,
+						opacity:0,
+				});
+
+				polygonMarkers[event.zindex]=(polygonMarker);
+
+				area = polygonArea(polygonPoints97);
+				areaO = polygonArea(polygonPoints97O);
+				areaD = Math.abs(area-areaO).toFixed(3);
+
+
+				var descriptionPG =  "測量面積(原始):"+"&nbsp"+area+"&nbspm2";
+				var descriptionPGP = "("+area*0.3025+"坪)";
+				var descriptionPG1 = "測量面積(優化):"+"&nbsp"+areaO+"&nbspm2";
+				var descriptionPGP1 = "("+areaO*0.3025+"坪)";
+				var descriptionPG2 = "測量面積差值:"+"&nbsp"+areaD+"&nbspm2";
+				var descriptionPGP2 = "("+areaD*0.3025+"坪)";
+
+				var descriptionPGAll ="";
+
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==true){
+						descriptionPGAll="<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>";
+				}
+
+				if ($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==true){
+					descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if ($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==true){
+					descriptionPGAll="<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==true){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";;
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==false){
+
+				}
+
+				else {
+
+					infowindowPolygon = new google.maps.InfoWindow({
+					
+						content:"<div>"+"<table class=\"striped\">"+descriptionPGAll+"</table>"+"</div>"
+					
+					});
+
+					infowindowPolygons[event.zindex]=(infowindowPolygon);
+					infowindowPolygon.open(map,polygonMarkers[event.zindex]);
+
+				}
+
+				polygonPoints97 =[];
+				polygonPoints97O =[];
+
+				///////////////////////////////click the polygon then add a infowindow///////////////////////////////////////////////
+
+
+				google.maps.event.addListener(event,'click',function(mouse){
+			
+				polyongPoints =[];
+				polygonPoints = event.getPath();
+
+				var latA =[];
+				var lngA =[];
+				
+
+				for(var i=0;i<polygonPoints.length;i++){
+
+					convert297(polygonPoints.getAt(i).lat(),polygonPoints.getAt(i).lng(),0.9999,polygonPoints97);
+					convert297(polygonPoints.getAt(i).lat(),polygonPoints.getAt(i).lng(),0.999942,polygonPoints97O);
+
+				}
+
+				area = polygonArea(polygonPoints97);
+				areaO = polygonArea(polygonPoints97O);
+				areaD = Math.abs(area-areaO).toFixed(3);
+
+				var descriptionPG =  "測量面積(原始):"+"&nbsp"+area+"&nbspm2";
+				var descriptionPGP = "("+area*0.3025+"坪)";
+				var descriptionPG1 = "測量面積(優化):"+"&nbsp"+areaO+"&nbspm2";
+				var descriptionPGP1 = "("+areaO*0.3025+"坪)";
+				var descriptionPG2 = "測量面積差值:"+"&nbsp"+areaD+"&nbspm2";
+				var descriptionPGP2 = "("+areaD*0.3025+"坪)";
+				var descriptionPGAll ="";
+
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==true){
+						descriptionPGAll="<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==false){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>";
+				}
+
+				if ($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==true){
+					descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if ($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==true){
+					descriptionPGAll="<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";
+				}
+
+				if($("#polygonOptionArea").prop("checked")==true && $("#polygonOptionOptimalArea").prop("checked")==true && $("#polygonOptionDifferenceArea").prop("checked")==true){
+						descriptionPGAll="<tr><td>"+descriptionPG+"</td>"+"<td>"+descriptionPGP+"</td>"+"</tr>"+"<tr><td>"+descriptionPG1+"</td>"+"<td>"+descriptionPGP1+"</td>"+"</tr>"+"<tr><td>"+descriptionPG2+"</td>"+"<td>"+descriptionPGP2+"</td>"+"</tr>";;
+				}
+
+				if($("#polygonOptionArea").prop("checked")==false && $("#polygonOptionOptimalArea").prop("checked")==false && $("#polygonOptionDifferenceArea").prop("checked")==false){
+
+				}
+
+				else {
+
+					infowindowPolygon = new google.maps.InfoWindow({
+					
+						content:"<div>"+"<table class=\"striped\">"+descriptionPGAll+"</table>"+"</div>"
+					
+					});
+
+					infowindowPolygons[event.zindex]=(infowindowPolygon);
+					infowindowPolygon.open(map,polygonMarkers[event.zindex]);
+
+				}
+
+				polygonPoints97 =[];
+				polygonPoints97O =[];		
+
+				});//END CLICK ADD INFO EVENT
+
+				google.maps.event.addListener(event,'rightclick',function(mouse){
+
+				event.setMap(null);
+
+				polygonMarkers[event.zindex].setMap(null);
+
+				infowindowPolygons.splice(event.zindex,1);
+
+				//polygonMarkers.splice(event.zindex,1);
+				
+
+				for(var i=0;i<polygonID;i++){
+
+						if(i==event.zindex && i!=polygonID-1){
+
+							for(var j=i+1;j<polygonID;j++){
+								//polygons[j].zindex = polygons[j].zindex-1;
+							}
+
+							polygons.splice(i,1);
+							polygonJSONString.splice(i,1);
+				
+							polygonID=polygonID-1; 
+							polygonCount = polygonCount-1;
+
+						}
+
+						else if(i==event.zindex && i==polygonID){
+
+							polygons.splice(i,1);
+							polygonJSONString.splice(i,1);
+				
+							polygonID=polygonID-1; 
+							polygonCount = polygonCount-1;
+
+						}
+				}
+
+
+				polygonPoints97 =[];
+				polygonPoints97O =[];
+
+				//infowindowPolygon.close();
+				
+
+			});//END polyline rightclick event
+
+
+			});////END polygoncomplete EVENT
+
+
+			//***************************************************// 
+			////////////    click to add polygon end   ////////////
+			//***************************************************// 
+
+
+			//***************************************************// 
+			////////////    get map image  start      /////////////
+			//***************************************************//
+
+			    var tempRectangle = new google.maps.Rectangle();
+
+    			var checkRectangle = 0;
+
+			    google.maps.event.addListener(drawingmanager,'rectanglecomplete',function(event){
+    				
+    				checkRectangle =1;
+
+    				$("div[class='toast']").remove();
+
+			    	tempRectangle.setMap(null);
+    
+			    	tempRectangle = event;
+    
+			    	var ne = event.getBounds().getNorthEast();
+			    	var sw = event.getBounds().getSouthWest();
+
+			    	convert297s(ne.lat(),sw.lng(),0.9999,pointImage[0]);
+			    	convert297s(ne.lat(),ne.lng(),0.9999,pointImage[1]);
+			    	convert297s(sw.lat(),ne.lng(),0.9999,pointImage[2]);
+			    	convert297s(sw.lat(),sw.lng(),0.9999,pointImage[3]);
+			    	convert297s(event.getBounds().getCenter().lat(),event.getBounds().getCenter().lng(),0.9999,pointImage[4]);
+    
+			    	rectangleCenter.lat=event.getBounds().getCenter().lat();
+			    	rectangleCenter.lng=event.getBounds().getCenter().lng();
+			    	
+			    	
+			    	xWidth = ((Math.abs(pointImage[0].X-pointImage[1].X))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+			    	yHeight = ((Math.abs(pointImage[0].Y-pointImage[3].Y))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+    				
+			    	toast("影像大小:"+xWidth*2+"X"+yHeight*2);
+
+			    	if(xWidth>640 || yHeight>640){
+    
+			    		alert("所選區域超出範圍(1280x1280)，請縮小比例尺或選取較小區域！，若直接輸出則超出範圍之地區影像無法顯示！");
+
+			    		imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+			    		/*	
+			    		xWidth=0;
+			    		yHeight=0;
+			    		imageLink4btn="";
+			    		event.setMap(null);
+    					*/
+			    	}
+    
+			    	else {
+       
+			    		imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+			    	}
+
+			    	google.maps.event.addListener(event,'bounds_changed',function(){
+
+					$("div[class='toast']").remove();
+    
+			    	var ne = event.getBounds().getNorthEast();
+			    	var sw = event.getBounds().getSouthWest();
+
+			    	convert297s(ne.lat(),sw.lng(),0.9999,pointImage[0]);
+			    	convert297s(ne.lat(),ne.lng(),0.9999,pointImage[1]);
+			    	convert297s(sw.lat(),ne.lng(),0.9999,pointImage[2]);
+			    	convert297s(sw.lat(),sw.lng(),0.9999,pointImage[3]);
+
+			    	xWidth = ((Math.abs(pointImage[0].X-pointImage[1].X))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+			    	yHeight = ((Math.abs(pointImage[0].Y-pointImage[3].Y))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+    				
+			    	toast("影像大小:"+xWidth*2+"X"+yHeight*2);
+
+			    	if(xWidth>640 || yHeight>640){
+    
+			    		alert("所選區域超出範圍(1280x1280)，請縮小比例尺或選取較小區域！，若直接輸出則超出範圍之地區影像無法顯示！");
+
+			    	}
+
+				});//END RECTANGLE BOUND CHANGED EVENT
+
+			    google.maps.event.addListener(event,'rightclick',function(){
+
+    					checkRectangle=0;
+			    		event.setMap(null);
+			    		$("div[class='toast']").remove();
+    
+			    });//end rectangle rightclick cancal event
+
+			    
+			    });//end polygon complete event
+
+				
+    
+			    
+			    
+
+			    google.maps.event.addListener(map,'zoom_changed',function(event){
+			    	$("#newZoomStatusA").text(map.getZoom());
+			    	$("div[class='toast']").remove();
+
+			    	if((checkRectangle==1)){
+
+			    		$("div[class='toast']").remove();
+
+			    		imageLink4btn="";
+    
+			    		if(map.getZoom()>20){
+			    			map.setZoom(20);
+			    		}
+    
+			    		else {
+    						
+			    			xWidth = ((Math.abs(pointImage[0].X-pointImage[1].X))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+			    			yHeight = ((Math.abs(pointImage[0].Y-pointImage[3].Y))/zoomScale[map.getZoom()]/0.00027608695).toFixed(0);
+			    	
+			    			toast("影像大小:"+xWidth*2+"X"+yHeight*2);
+
+			    			if(xWidth>640 || yHeight>640){
+			    				alert("所選區域超出範圍(1280x1280)，請縮小比例尺或選取較小區域！，若直接輸出則超出範圍之地區影像無法顯示！");
+			    			}
+
+			    			imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+    
+			    		}
+			    	}
+    				
+			    	
+			    });//end zoom_Change eventa
+
+    
+			    $("#exportMapBtn").on("click",function(){
+
+    				if(xWidth>640 || yHeight>640){
+    					imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+			    		alert("所選區域超出範圍(1280x1280)，請縮小比例尺或選取較小區域！，若直接輸出則超出範圍之地區影像無法顯示！");
+			    		$("#showExportMap").attr("src",imageLink4btn);
+			    		$("#imageInput").val(imageLink4btn);
+			    	}
+   
+			    	else{
+			    		imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+    					$("#showExportMap").attr("src",imageLink4btn);
+    					$("#imageUrlInput").val(imageLink4btn);
+			    	}
+
+			    });//END exportMap btn 
+
+			    $(newExportImage).on("click",function(){
+
+    				if(xWidth>640 || yHeight>640){
+    					imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+			    		alert("所選區域超出範圍(1280x1280)，請縮小比例尺或選取較小區域！，若直接輸出則超出範圍之地區影像無法顯示！");
+			    		$("#showExportMap").attr("src",imageLink4btn);
+			    		$("#imageUrlInput").val(imageLink4btn);
+			    		$('#modalExportMap').openModal();
+			    	}
+   
+			    	else{
+			    		imageLink4btn = "https://maps.googleapis.com/maps/api/staticmap?center="+rectangleCenter.lat+","+rectangleCenter.lng+"&zoom="+map.getZoom()+"&scale=2"+"&size="+xWidth+"x"+yHeight+"&maptype="+map.getMapTypeId()+"&format=jpg";
+    					$("#showExportMap").attr("src",imageLink4btn);
+    					$("#imageUrlInput").val(imageLink4btn);
+    					$('#modalExportMap').openModal();
+			    	}
+
+			    });//END exportMap btn 
+
+				//***************************************************// 
+				////////////    get map image  end       //////////////
+				//***************************************************//
+
+				$("#downloadImg").on('click',function(){
+					$("#imageUrlForm").submit();
+					//($("#imageUrlInput").val());
+				});
+
+			//***************************************************// 
+			////////////    click to convert start     ////////////
+			//***************************************************//
+
+			$("#modalLL297").keypress(function(event){
+
+				if(event.which=="13"){
+
+					if($("#convertInput2").prop("value")=="" || $("#convertInput1").prop("value")==""){
+						alert("輸入欄位空白，請重新輸入!");
+					}
+
+					else{
+						var pointCon = { X:0,Y:0};
+						convert297s($("#convertInput2").val(),$("#convertInput1").val(),0.9999,pointCon);
+						$("#convertResult1").html(pointCon.Y);
+						$("#convertResult2").html(pointCon.X);
+					}
+			    }
+			});
+
+
+			$("#convertBtn1").click(function(){
+
+				if($("#convertInput2").val()=="" || $("#convertInput1").val()==""){
+					alert("輸入欄位空白，請重新輸入!");
+				}
+
+				else{
+
+					var pointCon = { X:0,Y:0};
+					convert297s($("#convertInput2").val(),$("#convertInput1").val(),0.9999,pointCon);
+					$("#convertResult1").html(pointCon.Y);
+					$("#convertResult2").html(pointCon.X);
+				}
+					
+			});
+
+			$("#modal972LL").keypress(function(event){
+
+				if(event.which=="13"){
+
+					if($("#convertInput3").prop("value")=="" || $("#convertInput4").prop("value")==""){
+						alert("輸入欄位空白，請重新輸入!");
+					}
+
+					else{
+						var latlng = {Lt:0,Ln:0};
+						convert2LatLng($("#convertInput3").val(),$("#convertInput4").val(),0.9999,latlng);
+						$("#convertResult3").html(latlng.Ln);
+						$("#convertResult4").html(latlng.Lt);
+					}
+			    }
+			});
+
+			$("#convertBtn2").click(function(){
+
+					if($("#convertInput3").prop("value")=="" || $("#convertInput4").prop("value")==""){
+						alert("輸入欄位空白，請重新輸入!");
+					}
+
+					else{
+						var latlng = {Lt:0,Ln:0};
+						convert2LatLng($("#convertInput3").val(),$("#convertInput4").val(),0.9999,latlng);
+						$("#convertResult3").html(latlng.Ln);
+						$("#convertResult4").html(latlng.Lt);
+					}
+				
+			});
+				
+			//***************************************************// 
+			////////////    click to convert end     //////////////
+			//***************************************************//
+
+    		}
+
+    		
+    		
+    		 
+
+    	});//end jquery ready
+
+    </script>
+    
+
+</head>
+
+<body>
+
+	 <!--intro slider-->
+	<div id="sliderDiv" class="slider col s12" style="width:1280px;margin:0px auto">
+		<ul class="slides">
+			<li>
+				<img src="img/slider_intro.jpg" class="responsive-img"/>
+				<div class="caption center-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">歡迎來到TWDSN台灣97坐標地圖測量網</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">第一次到訪請參閱本頁面說明：</h5>
+				</div>
+			</li>
+
+			<li>
+				<img src="img/toolbar.jpg" class="responsive-img"/>
+				<div class="caption right-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">主要功能列</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">主要功能均可在本區域選取執行</h5>
+				</div>
+			</li>
+
+			<li>
+				<img src="img/drawingTool.jpg" class="responsive-img"/>
+				<div class="caption left-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">幾何物件繪製工具</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">點選按鈕後在地圖上繪製相對應幾何物件</h5>
+				</div>
+			</li>
+			<li>
+				<img src="img/delete.jpg" class="responsive-img"/>
+				<div class="caption left-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">刪除幾何物件快捷鍵</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">刪除對應繪製工具繪製的幾何物件</h5>
+				</div>
+			</li>
+			<li>
+				<img src="img/export.jpg" class="responsive-img"/>
+				<div class="caption center-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">DXF檔與地圖影像輸出快捷鍵</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">輸出幾何物件DXF檔或選取區域的地圖影像</h5>
+				</div>
+			</li>
+			<li>
+				<img src="img/typewitch.jpg" class="responsive-img"/>
+				<div class="caption right-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">地圖類型切換鍵</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">切換不同地圖類型圖層(左至右依序為道路,衛星,混合圖層)</h5>
+				</div>
+			</li>
+			<li>
+				<img src="img/zoom.jpg" class="responsive-img"/>
+				<div class="caption left-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">地圖比例尺切換鍵</h3>
+					<h5 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">改變地圖比例尺</h5>
+
+				</div>
+			</li>
+			<li>
+				<img src="img/menu.jpg" class="responsive-img"/>
+				<div class="caption center-align">
+					<h3 class="white-text center-align" style="background-color:rgba(0,0,0,0.5)">詳細說明請參照上方功能列的介紹與說明</h3>
+				</div>
+			</li>
+
+		</ul>
+		<a id="sliderSkip" class="waves-effect btn col s3 red lighten-1"><i class="mdi-av-fast-forward"></i>跳過說明</a>
+		<p class="col s9 red-text">*網站仍在架構測試中,目前僅適用於桌上型電腦瀏覽器,不適用於手機與平板電腦!本網頁適用於ie 9.0以上,或chrome,firefox,opera,safari瀏覽器!</p>
+	</div><!--intro slider div end-->
+    
+    <!--main container-->
+    <div id="mainWrapper">
+    <!--Start web content-->
+   
+    <!--start navi bar on top of page-->
+    <div id="naviDiv" class="">
+    <nav id="navBar" style="display:none" class="cyan accent-4 col s12">
+    	<div class="nav-wrapper">
+      		<a href="http://54.169.56.139"><i style="margin-left:2%" class="mdi-maps-map left"></i>MAP CAPTURE</a><!--class="brand-logo"-->
+      		<ul class="right ">
+       	 		<li><a id="naviConvertA" href="#" class="dropdown-buttonConvert" data-activates="dropdown1"><i class="mdi-action-autorenew left"></i><b>坐標轉換</b></a></li>
+       	 			<ul id="dropdown1" class="dropdown-content">
+       	 				<li><a href="#modalLL297" class="white-text modal-trigger">經緯度轉TWD97</a></li>
+       	 				<li><a href="#modal972LL" class="white-text modal-trigger">TWD97轉經緯度</a></li>
+       	 			</ul>    	 				
+
+       	 		<li><a id="naviSearchA" href="#" class="dropdown-buttonSearch" data-activates="dropdown2"><i class="mdi-action-search left"></i>點位搜尋</a></li>
+       	 			<ul id="dropdown2" class="dropdown-content">
+       	 				<li><a href="#modalSearchBy97" class="white-text modal-trigger">TWD97</a></li>
+       	 				<li><a href="#modalSearchByLL" class="white-text modal-trigger">經緯度</a></li>
+       	 				<li><a href="#modalSearchByAddress" class="white-text  modal-trigger">地址</a></li>
+       	 			</ul>
+
+
+       	 		<li><a id="naviOperationA" href="#" class="dropdown-buttonFunction" data-activates="dropdown4"><i class="mdi-action-dashboard left"></i>物件操作</a></li>
+       	 			<ul id="dropdown4" class="dropdown-content">
+       	 				<li class="" id="li1"><a id="btnCleanAllPoint" class="white-text waves-effect waves-light">清除點物件</a></li>
+       	 				<li class="" id="li2"><a id="btnCleanAllPolyline" class="white-text ">清除聚合線</a></li>
+       	 				<li class="" id="li3"><a id="btnCleanAllPolygon" class="white-text ">清除多邊形</a></li>
+       	 				<li class="" id="li4"><a id="exportMapBtn" href="#modalExportMap" class="white-text text-darken-1 modal-trigger">輸出地圖</a></li>
+       	 				<li class="" id="li5"><a id="btnOutputDXF" href="#" class="white-text">輸出DXF</a></li>
+       	 			</ul>
+
+
+				<li><a id="naviOptionA" href="#" class="dropdown-buttonOption" data-activates="dropdown3"><i class="mdi-toggle-check-box left"></i>物件選項</a></li>
+       	 			<ul id="dropdown3" class="dropdown-content">
+       	 				<li><a href="#modalOptionPoint" class="white-text  modal-trigger">點物件選項</a></li>
+       	 				<li><a href="#modalOptionPolyline" class="white-text  modal-trigger">聚合線選項</a></li>
+       	 				<li><a href="#modalOptionPolygon" class="white-text  modal-trigger">多邊形選項</a></li>
+       	 			</ul>
+
+       	 		<li><a id="naviAboutA" href="#"  class="dropdown-Instruction" data-activates="dropdown5"><i class="mdi-communication-live-help left"></i>簡介說明</a></li>
+       	 			<ul id="dropdown5" class="dropdown-content">
+       	 				<li><a href="#introductionDiv" id="backTointro" class="white-text modal-trigger">使用說明</a></li>
+       	 				<li><a href="#modalInstruction" class="white-text  modal-trigger">網頁介紹</a></li>
+       	 			</ul>
+       	 		<li><a id="aboutMe" href="#aboutMeDiv" class="white-text modal-trigger"><i class="mdi-action-perm-identity left"></i>關於作者</a></li>
+     	 	</ul>
+   	 	</div>
+  	</nav><!--end navi-->
+  	</div><!--end navi div-->
+
+    <div id="mainWrap" class="col s12 row" style="background-color:rgba(255,255,255,0);font-weight:600"><!--style="background-image:url(world_map.jpg)"-->
+		
+    	<div id="mapCanvas" class="col s12" ></div><!--end mapCanvas Div google map 地圖區-->
+    		*網站仍在架構測試中,目前僅適用於桌上型電腦瀏覽器,不適用於手機與平板電腦!本網頁適用於ie 9.0以上,或chrome,firefox,opera,safari瀏覽器
+    </div><!--end mainWrao(small one for map convas	) div 網頁主要頁面-->
+		
+	</div><!--end main wrapper(larger one)-->
+
+	<!--start web instruction div-->
+  	<div id="modalInstruction" class="modal" style="text-align:justify;font-size:16px">
+  		<h5 class="cyan-text">網頁介紹</h5>
+  		本網頁主要根據我的碩士論文：
+     	<cite>A Study of the Optimal Scale Factor along the Central Meridian for the TWD97 Transverse Mercator Projection in 2˚ Zones</cite> 
+     	來展示在使用優化的中央經線尺度比後之TWD97坐標系統與原本系統間的差異.
+     	<br />
+     	<br />
+     	二度分帶TM投影為臺灣大地基準TWD 67與TWD 97所使用的地圖投影系統，主要針對臺灣國土範圍的狹長特性與需求所建立。內政部設定該投影系統的中央經線投影尺度比為0.9999，
+     	但遍尋文獻無法找到其來源。本研究以臺灣本島為研究範圍，根據二度分帶TM投影的長度及面積變形理論推導最佳的中央經線尺度比，同時分析探討現今所使用的中央經線投影尺度比是否使投影后擁有最佳的長度與面積變形。
+     	<br />
+     	<br />
+     	在使用現有的中央經現尺度比(0.9999)與優化的中央尺度比(0.999942)後，將主要差異在其點位坐標，長度與面積上的數據做展示，最佳化中央經現尺度比的數據主要是根據尤瑞哲老師的期刊論文
+     	<cite>Optimal scale factor on the central meridian for a 2°TM map projection in TWD97 </cite>
+     	中完整的研究數據來作相關計算.
+     	<br />
+     	<br />
+     	<h6 class="red-text">注意！適用範圍為台灣本島地區120E至122E,21N至26N的範圍,相關說明請詳閱網頁使用說明</h6>
+     	<br />
+     	<h5 class="cyan-text">網頁架構</h5>
+     	<h6>網頁框架:<a href="http://materializecss.com/" class="blue-text">materialize.com</a></h6>
+     	<h6>地圖操作函式庫:<a href="https://developers.google.com/maps/documentation/javascript/?hl=zh-tw" class="blue-text">Google map API V3</a></h6>
+     	<div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+  	</div><!--end start web instruction div-->
+
+  	<!--start convert to twd97 div-->
+  	<div id="modalLL297" class="modal cyan-text text-darken-1 row" style="width:35%">
+       	 <h3 class="center-align">經緯度轉TWD97坐標</h3>
+       	 <div class="input-field col s12">
+       	 	<input id="convertInput1" type="number" class="validate">
+       	 	<label id="convertInput1Label" for="convertInput1">經度：</label>			
+       	 </div>
+       	 <div class="input-field col s12">
+       	 	<input id="convertInput2" type="number" class="validate">
+        	<label id="convertInput2Label" for="convertInput2">緯度：</label>
+       	 </div>
+       	 <fieldset >
+       	 	<legend class="cyan-text text-darken-1">轉換成果</legend>
+       	 	<table class="bordered hoverable">
+       	 		<tr><td>N坐標:</td><td id="convertResult1"></td></tr>
+       	 		<tr><td>E坐標:</td><td id="convertResult2"></td></tr>
+       	 	</table>
+       	 </fieldset>
+       	 <br/>
+       	 <a class="btn waves-effect cyan col s4 offset-s4" id="convertBtn1">轉換為TWD97坐標</a>
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+    </div><!--end convert to twd97 div-->
+
+
+    <!--start convert to latltn div-->
+    <div id="modal972LL" class="modal cyan-text text-darken-1 row" style="width:30%">
+       	 <h3 class="center-align">TWD97坐標轉經緯度</h3>
+       	 <div class="input-field col s12">
+       	 	<input id="convertInput3" type="number" class="validate">
+       	 	<label id="convertInput3Label" for="convertInput5">N坐標:</label>			
+       	 </div>
+       	 <div class="input-field col s12">
+       	 	<input id="convertInput4" type="number" class="validate">
+        	<label id="convertInput4Label" for="convertInput4">E坐標:</label>
+       	 </div>
+       	 <fieldset>
+       	 	<legend class=" cyan-text text-darken-1">轉換成果</legend>
+       	 	<table class="bordered hoverable">
+       	 		<tr><td>經度:</td><td id="convertResult3"></td></tr>
+       	 		<tr><td>緯度:</td><td id="convertResult4"></td></tr>
+       	 	</table>
+       	 </fieldset>
+       	 <br/>
+       	 <a class="btn waves-effect cyan col s4 offset-s4" id="convertBtn2">轉換為經緯度</a>
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+    </div><!--end convert to latltn div-->
+
+    <!--start search by twd97 div-->
+     <div id="modalSearchBy97" class="modal cyan-text text-darken-1 row" style="width:30%">
+     	<h3 class="center-align">TWD97坐標搜尋</h3>
+       	 <div class="input-field col s12">
+       	 	<input id="searchInput1" type="number" class="validate">
+       	 	<label id="searchInput1Label" for="searchInput1">N坐標:</label>			
+       	 </div>
+       	 <div class="input-field col s12">
+       	 	<input id="searchInput2" type="number" class="validate">
+        	<label id="searchInput2Label" for="searchInput2">E坐標:</label>
+       	 </div>
+       	 <br/>
+       	 <a class="btn waves-effect cyan col s4 offset-s4" id="searchBtn1">進行點位搜尋</a>
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end search by twd97 div-->
+
+     <!--start search by latlng div-->
+     <div id="modalSearchByLL" class="modal cyan-text text-darken-1 row" style="width:30%">
+     	<h3 class="center-align">經緯度搜尋</h3>
+       	 <div class="input-field col s12">
+       	 	<input id="searchInput3" type="number" class="validate">
+       	 	<label id="searchInput3Label" for="searchInput3">經度:</label>			
+       	 </div>
+       	 <div class="input-field col s12">
+       	 	<input id="searchInput4" type="number" class="validate">
+        	<label id="searchInput4Label" for="searchInput4">緯度:</label>
+       	 </div>
+       	 <br/>
+       	 <a class="btn waves-effect cyan col s4 offset-s4" id="searchBtn2">進行點位搜尋</a>
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end search by latlng div-->
+
+     <!--start search by twd97 div-->
+     <div id="modalSearchByAddress" class="modal cyan-text text-darken-1 row"  style="width:30%">
+     	<h3 class="center-align">地址搜尋</h3>
+       	 <div class="input-field col s12">
+       	 	<input id="searchInput5" type="text" class="validate">
+       	 	<label id="searchInput5Label" for="searchInput5">地址:</label>			
+       	 </div>
+       	 <br/>
+       	 <a class="btn waves-effect cyan col s4 offset-s4" id="searchBtn3">進行點位搜尋</a>
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end search by twd97 div-->
+
+     <!--start point option div-->
+     <div id="modalOptionPoint" class="modal cyan-text text-darken-1 row" style="width:30%">
+     	<h3>點物件顯示選項</h3>
+     	<table class="bordered">
+  			<tr>
+     	      	<td>
+     	      		<input type="checkbox" id="pointOptionLatLng" class="pointOption" checked/>
+                    <label for="pointOptionLatLng">緯度,經度</label>
+     	      	</td>
+     	    </tr>	
+
+     	    <tr>
+     	      	<td>
+     	      		<input type="checkbox" id="pointOptionOriginEN" class="pointOption" checked/>
+                    <label for="pointOptionOriginEN">E坐標,N坐標(原始TWD97坐標系統)</label>
+     	      	</td>
+     	    </tr>
+
+     	    <tr>
+     	      	<td>
+     	      		<input type="checkbox" id="pointOptionOptimalEN" class="pointOption" checked/>
+                   	<label for="pointOptionOptimalEN">E坐標,N坐標(優化TWD97坐標系統)</label>
+     	      	</td>
+     	    </tr>
+     	    <tr>
+     	    	<td>
+     	      		<input type="checkbox" id="pointOptionDifferenceEN" class="pointOption" checked/>
+                    <label for="pointOptionDifferenceEN">E坐標差,N坐標差</label>
+     	      	</td>
+     	    </tr>
+     	    <tr>
+     	    	<td>
+     	      		<input type="checkbox" id="pointOptionNotAll"/>
+                    <label for="pointOptionNotAll">取消所有選項</label>
+     	      	</td>	
+     	    </tr>
+     	</table>	
+
+
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end point option div-->
+
+     <!--start polyline option div-->
+     <div id="modalOptionPolyline" class="modal cyan-text text-darken-1 row" style="width:30%">
+     	<h3>聚合線物件顯示選項</h3>
+     	<table class="bordered">
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polylineOptionLength" class="polylineOption" checked/>
+        			<label for="polylineOptionLength">聚合現長度(原始TWD97坐標系統)</label>
+        		</td>
+        	</tr>
+        		
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polylineOptionOptimalLength" class="polylineOption" checked/>
+        			<label for="polylineOptionOptimalLength">聚合線長度(優化TWD97坐標系統)</label>
+        		</td>
+        	</tr>
+    
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polylineOptionDifferenceLength" class="polylineOption" checked/>
+        			<label for="polylineOptionDifferenceLength">聚合線長度差值(原始與優化系統差異)</label>
+        		</td>
+        	</tr>
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polylineOptionNotAll"/>
+        			<label for="polylineOptionNotAll">取消所有選項</label>
+        		</td>
+        	</tr>
+
+        </table>
+
+
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end option polyline div-->
+
+     <!--start polygon option div-->
+     <div id="modalOptionPolygon" class="modal cyan-text text-darken-1 row" style="width:30%">
+     	<h3>多邊形物件顯示選項</h3>
+     	<table class="bordered">
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polygonOptionArea" class="polygonOption" checked/>
+    				<label for="polygonOptionArea">多邊形面積(原始TWD97坐標系統)</label>
+        		</td>
+        	</tr>
+        		
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polygonOptionOptimalArea" class="polygonOption" checked/>
+    				<label for="polygonOptionOptimalArea">多邊形面積(優化TWD97坐標系統)</label>
+        		</td>
+        	</tr>
+    
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polygonOptionDifferenceArea" class="polygonOption" checked/>
+    				<label for="polygonOptionDifferenceArea">多邊形面積差值(原始與優化系統差異)</label>
+        		</td>
+        	</tr>
+        	<tr>
+        		<td>
+        			<input type="checkbox" id="polygonOptionNotAll"/>
+    				<label for="polygonOptionNotAll">取消所有選項</label>
+        		</td>
+        	</tr>
+
+        </table>
+     	
+       	 <div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+     </div><!--end option polygon div-->
+
+     <!--start export map div-->
+    <div id="modalExportMap" class="modal cyan-text text-darken-1 row" style="width:70%">
+    	<div class="action-bar col s12" >
+    		<a id="downloadImg" class="col s1 btn modal-action modal-close blue">下載</a>
+     		<a href="#" class="col s1 btn modal-action modal-close red">離開</a>
+   		</div>
+    	<img id="showExportMap" class="col s12">
+    </div><!--end export map div-->	
+
+  	<!--hidden form for php prupose-->
+  	<form id="inputForm" action="export.php" method="post" class="input-field row">		
+		<textarea id="textInput" name="inputJSON" style="display:none;"></textarea>	
+	</form>
+	
+	<form id="imageUrlForm" action="exportImage.php" method="post">
+		<input type="text" id="imageUrlInput" name="iUrl" style="display:none">
+	</form><!--end hidden form for php prupose-->
+
+	<div id="introductionDiv" class="white row modal">
+		
+		<h4 class="teal-text">網頁使用說明:</h4>	
+		<div class="col s12">
+				<div id="top_menu" class="section scrollspy">
+					<h5 class="teal-text">主要功能列:</h5>
+					<p>上方主要功能列主要包含六大區域，主要功能接能從此區選取操作。</p>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_01.png" style="height:30px">
+							<p>使用者可點選來執行經緯度轉TWD97或TWD97轉經緯度之座標轉換。</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_02.png" style="height:30px">
+							<p>在點位搜尋中，使用者可選擇<b class="cyan-text">TWD97坐標</b>,<b class="cyan-text">經緯度</b>或者是<b class="cyan-text">地址</b>來進行搜尋，輸入坐標或地址進行搜尋後，會在地圖上標出該點位置與相關資訊。<br>點位上顯示的資訊內容可在<b class="cyan-text">物件資訊選項</b>進行選取。</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_03.png" style="height:30px">
+							<p><b class="red-text">刪除全部幾何物件</b>，可對已繪製於地圖上的特定類型幾何物件進行全部刪除的動作。使用者同樣可使用地圖右方刪除按鈕<img src="img/delete_icon.png" style="height:30px;vertical-align:middle">來進行相同功能。<br>
+							<b class="green-text">輸出DXF</b>主要將已繪製的幾何物件輸出成AUTOCAD的DXF檔案，檔案座標系統為TWD97坐標系統，使用者在讀取輸出的DXF檔時為避免錯誤發生，<b class="red-text">可先開啟AUTOCAD後在對檔案進行讀取</b>，並在AUTOCAD中依序輸入指令Z和E來使繪圖區置中。輸出DXF功能同樣可點選右下方<img src="img/export_icon_01.png" style='vertical-align:middle'>按鈕來執行。<br>
+							<b class="green-text">輸出地圖影像</b>功能主要是使用者藉由繪圖工具<img src="img/tool_05.png" style="height:30px;vertical-align:middle">選取範圍後，點選<b class="green-text">輸出地圖影像</b>功能或對應快捷鈕來該範圍的影像，輸出影像大小限定在<b class="red-text">1280X1280px</b>，使用者需注意！輸出影像功能同樣可點選右下方<img src="img/export_icon_02.png" style="vertical-align:middle">按鈕來執行。輸出的地圖影像類型可藉由<img src="img/switch_map_icon.png" style="height:30px;vertical-align:middle">切換到不同地圖類型圖層來取得不同類型的地圖影像。</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_04.png" style="height:30px">
+							<p>在物件資訊選項中，使用者可選擇幾何物件上資訊視窗中顯示的資訊，若使用者將選項全部取消，則資訊視窗則不會出現於創建的幾何物件上。</p>
+						</li>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_05.png" style="height:30px">
+							<p>網頁說明與網頁簡介</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/top_menu_06.png" style="height:30px">
+							<p>作者資訊</p>
+						</li>
+					</ul>
+					
+				</div>	
+			
+			
+				<div id="drawing_tools"  class="section scrollspy">
+					<h5 class="teal-text">繪製工具:</h5>
+					<p>使用者可藉由地圖下方繪製工具在地圖上創建幾何物件</p>
+					<img src="img/drawing_tool.png" style="height:30px">
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/tool_01.png" style="height:30px">
+							<p>移動工具，切換到此狀態不會創建任何物件，可任意移動地圖。若使用者將物件上的顯示資訊視窗關閉，建議使用者可切換到移動工具，對幾何物件按下滑鼠左鍵來重新顯示資訊視窗，<b class="red-text">在移動模式下對幾何物件按下滑鼠右鍵，可刪除該幾何物件</b>。</p>
+						</li>
+					</ul>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/tool_02.png" style="height:30px">
+							<p>創建點物件工具，使用者可切換到此模式下點選地圖來創建點物件，<b class="red-text">在點物件下按下滑鼠右鍵，可刪除該幾何物件</b>。</p>
+						</li>
+					</ul>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/tool_03.png" style="height:30px">
+							<p>創建線物件工具，使用者可切換到此模式在地圖上來創建線物件，可在地圖上快速連按兩下滑鼠左鍵來結束線物件創建，使用者可拖曳物件上的白色節點來改變該幾何物件。<b class="red-text">在線物件下按下滑鼠右鍵，可刪除該幾何物件</b>。</p>
+						</li>
+					</ul>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/tool_04.png" style="height:30px">
+							<p>創建多邊形物件工具，使用者可切換到此模式在地圖上來創建多邊形物件，可在地圖上快速連按兩下滑鼠左鍵來結束多邊形物件創建，使用者可拖曳物件上的白色節點來改變該幾何物件。<b class="red-text">在多邊形物件下按下滑鼠右鍵，可刪除該幾何物件</b>。</p>
+						</li>
+					</ul>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/tool_05.png" style="height:30px">
+							<p>地圖影像輸出範圍選取模式，使用者在輸出地圖影像前必須換到此模式下，在地圖上選取特定範圍，選取後右上方會出現影像大小，輸出影像大小限定在<b class="red-text">1280X1280px</b>，使用者可拖曳物件上的白色節點來改變該幾何物件。<b class="red-text">在物件下按下滑鼠右鍵，可刪除該幾何物件</b>。</p>
+						</li>
+					</ul>
+				</div>	
+
+				<div id="other_tools"  class="section scrollspy">
+					<h5 class="teal-text">其他功能:</h5>
+					<ul class="collection">
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/switch_map_icon.png" style="height:30px">
+							<p>使用者可選取不同按鈕來切換地圖型態。</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/zoom_icon.png" style="height:30px">
+							<p>使用者可調整左方縮方工具來改變地圖比例尺。</p>
+						</li>
+						<li class="collection-item" style="line-height:30px;text-align:justify"><img src="img/streetview.png" style="height:30px">
+							<p>使用者可拖曳黃色小人至相關位置來切換至街景地圖。</p>
+						</li>
+					</ul>
+				</div>
+		</div>
+		<!--
+		 <div class="col s2">
+      		<ul class="section table-of-contents">
+        		<li><a href="#top_menu">主要功能列</a></li>
+        		<li><a href="#drawing_tools">繪製工具</a></li>
+        		<li><a href="#other_tools">其他功能</a></li>
+      		</ul>
+    	</div>
+		-->
+    	<div class="action-bar col s12">
+     		<a href="#" class="btn modal-action modal-close red">離開</a>
+   		</div>
+
+	</div><!--end instroduction-->
+
+	<!--start about me div-->
+	<div id="aboutMeDiv" class="modal row col s12">
+
+		<div class="col s2">
+			<img src="img/self.png" alt="selfy image" class="circle reponsive-img" style="height:50px">
+		</div>
+		<div class="col s10 row valign-wrapper section" style="height:50px">
+			<h5 class="valign left-align col s3">柯承宏</h5>
+			<h7 class="valign left-align col s9" style="text-align:justify">成大測量所畢,測量技師,業餘程式愛好者,對於撰寫程式有著相當的興趣,如果對於本網頁有任何問題,或想與我交換空間資訊,程式撰寫或網頁設計相關心得,請email至<a href="mailto:chenghungko@gmail.com">chenghungko@gmail.com</a>與我聯絡,我的其他作品請移至<a href="http://chkosprotfolio.blogspot.tw/">其他作品集</a>參觀</h7>
+			<!--<h5 class="valign left-align col s5"><a href="mailto:chenghungko@gmail.com"><i class="mdi-communication-email"></i>&nbsp 連絡我</a></h5>-->
+		</div>
+		 
+		 <div class="divider col s12"></div>
+		 <div class="section col s12 row">
+   			<h5 class="col s12">WORK EXPERIENCE</h5>
+   			<h6 class="col s8"><b>Yi-Hui Construction Company. - <i>Assistant Engineer</i></b></h6> <h6 class="col s4 right-align">Apr 2014-Dec 2014</b></h6>
+   			<h6 class="col s8"><b>Chung-Shing Survey co., ltd. - <i>Assistant Engineer</i></b></h6> <h6 class="col s4 right-align">Oct 2012-Mar 2014</b></h6>
+   			<h6 class="col s8"><b>Water Resources Agency (Taiwan) - Substitute Military Service</b></h6> <h6 class="col s4 right-align">Sep 2011-Aug 2012</b></h6>
+		 </div>
+		 
+			<div class="divider col s12"></div>
+			<div class="section col s12 row">
+			    <h5 class="col s12">EDUCATION</h5>
+			    <h6 class="col s8"><b>Department of Geomatics, National Cheng-Kung University</b></h6> <h6 class="right-align col s4">Tainan City, Taiwan</h6>
+			    <h7 class="col s6"><i>Master of Science in Geomatics</i></h7> <h7 class="right-align col s6">2009-2011</h7>
+			    <br />
+			    <h6 class="col s8"><b>Department of Geomatics, National Cheng-Kung University</b></h6> <h6 class="right-align col s4">Tainan City, Taiwan</h6>
+			    <h7 class="col s6"><i>Bachelor of Science in Geomatics</i></h7> <h7 class="right-align col s6">2005-2009</h7>
+			    <br />
+			    <h6 class="col s8"><b>National Taichung First Senior High School</b></h6> <h6 class="right-align col s4">Taichung City, Taiwan</h6>
+			    <h7 class="right-align col s3 offset-s9">2002-2005</h7>
+		    </div>
+			
+			<div class="divider col s12 row"></div>
+		    <div class="section col s12" style="margin-bottom:2%">
+		    	<h5 class="col s12">PUBLICATION</h5>
+				<h6 class="col s12"><i>Rey-Jer You & Cheng-Hung Ko, “Optimal Scale Factor On The Central Meridian For A 2°TM Map Projection In TWD97”, Journal of The Chinese Institute of Engineers (2014), Volume 37, Issue 1.</i></h6>
+			</div>
+			
+			<div class="divider col s12"></div>
+			<div class="section col s12 row">
+		    	<h5 class="col s12">SKILLS</h5>
+				<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			Language: Chinese(native), English(fluent)
+   		    		</div>
+   		   		</div>
+   		   		<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			Programming skills: Java, C, Matlab, HTML/CSS, JavaScript, PHP.
+   		    		</div>
+   		   		</div>
+   		   		<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			Computer skills: Autocad, Arcgis, ENVI, Microsoft Office Suite, Lasercontrol,   Microstation, Mapinfo, Photoshop, Polywroks, Pointtools, QGIS.
+   		    		</div>
+   		   		</div>
+			</div>
+
+			<div class="divider col s12"></div>
+			<div class="section col s12 ">
+				<h5 class="col s12">CERTIFICATION</h5>
+				<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			Taiwan Professional Surveying Engineer Examination – Qualified
+   		    		</div>
+   		   		</div>
+   		   		<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			TOEFL – iBT : 90/120 (Reading:24,Listening:23,Speaking:23,Writing:20)
+   		    		</div>
+   		   		</div>
+   		   		<div class="col s12 row">
+   		    		<i class="tiny mdi-action-label col s1"></i>
+   		    		<div class="col s11" style="text-align:justify">
+   		    			TOEIC : 850
+   		    		</div>
+   		   		</div>
+			</div>
+
+			<div class="divider col s12"></div>
+			<div class="section col s12 ">
+				<h5 class="col s12">PORTFOLIO</h5>
+				<div class="col s12 row">
+   		    		<div class="col s11" style="text-align:justify">
+   		    			<h5><a href="http://kerkerland.blogspot.tw/">Link to my portfolio blog</a></h5>
+   		    		</div>
+   		   		</div>
+			</div>
+			
+		    <div class="action-bar col s12">
+     	    	<a href="#" class="btn modal-action modal-close red ">離開</a>
+   		    </div>		
+	</div><!--end about me div-->
+
+</body>
+
+
+
+</html>
