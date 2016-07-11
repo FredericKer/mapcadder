@@ -3,7 +3,7 @@
 
 ### INTRODUCTION
 
-Since Google Map only provides LatLng and UTM format coordinate which are for worldwide but not a good soluation for perticular country, user from Taiwan don't have the accurate survey data from google map. In order to solve this problem, we need to use a 2D coordinate system based on Taiwan's own requirement.
+Since Google Map only provides LatLng and UTM format coordinate which are for worldwide but not a good soluation for particular country, user from Taiwan don't have the accurate survey data from google map. In order to solve this problem, we need to use a 2D coordinate system based on Taiwan's own requirement.
 
 This website is based on my research *"A Study of the Optimal Scale Factor along the Central Meridian for the TWD97 Transverse Mercator Projection in 2˚ Zones"*, which provide a batter 2D coordinate system and increase accuracy for survey data for Taiwan.
 
@@ -16,4 +16,11 @@ MapCADder also provide many useful functions for users.
 You can go to http://kerkerland.com/mapcadder to visit the website.
 
 If you have any suggestion, please contact send me an email chenghungko@gmail.com
+
+
+
+this project include two useful lib 
+- PHP DXF Create from Alessandro Vernassa 
+- Materalize from http://materializecss.com/
+
 
