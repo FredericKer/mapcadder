@@ -1,0 +1,22 @@
+body {
+    margin:0px;
+    padding:0px;   
+
+}
+
+#mapCanvas {
+    overflow:hidden;
+}
+
+.collapsible-body{
+    overflow:auto;
+}
+
+#shadowInfoWindow{
+	position: absolute;
+    margin: auto;
+	display: block;
+  	font-weight: 800;
+    z-index:20002;
+
+}
