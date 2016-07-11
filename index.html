@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel='stylesheet' href='css/materialize.min.css'>
+<link rel='stylesheet' href='css/styles.css'>
+<link rel='stylesheet' href='css/jquery-ui.min.css'>
+<link rel='stylesheet' href='css/animate.css'>
+<link rel='stylesheet' href='css/pace.css'>
+<link rel='stylesheet' href='css/youtube.minify.css'>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+<script src='js/materialize.min.js'></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/pace.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDM5lokFpqYotA_neK9hzsLMe8Q9bIuB9o&libraries=drawing&&language=zh-tw"></script>
+<script src="js/gMap.min.js"></script>
+<script src="js/js.cookies.js"></script>
+<script src="js/youtube.minify.js"></script>
+<script>
+
+</script>
+<script>
+
+$(document).ready(function(){
+
+Pace.start();
+var newMap = new gMap();
+newMap.initMap(); 
+
+$('.modal-trigger').leanModal();
+
+if(Cookies.get('visit')==undefined){
+
+
+$("#mapMenuDiv").openFAB();
+
+Cookies.set('visit',true);
+
+}
+
+})
+   
+
+</script>
+
+</head>
+
+
+
+<body>
+
+
+<form id="mapImageUrlForm" action="php/exportImage.php" method="post" style='display:none'>
+<input type="text" id="mapImageUrlInput" name="iUrl" style="display:none">
+</form><!--end hidden form for php prupose-->
+
+<form id="dxfExportForm" action="php/export.php" method="post" style='display:none'>
+<input type="text" id="dxfExportInput" name="inputJSON" style="display:none">
+</form><!--end hidden form for php prupose-->
+
+
+</body>
+</html>
