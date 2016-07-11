@@ -10,7 +10,7 @@ This website is based on my research *"A Study of the Optimal Scale Factor along
 MapCADder also provide many useful functions for users.
 - user can export google map image as png file.
 - user can export the geometry object as Autocad DXF file.
-- convert coordinate between latng, UTM, and TWD97 coordinate system.
+- convert coordinate between LatLng, UTM, and TWD97 coordinate system.
 
 
 You can go to http://kerkerland.com/mapcadder to visit the website.
